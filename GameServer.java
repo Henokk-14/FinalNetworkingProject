@@ -107,4 +107,45 @@ public class GameServer implements Runnable {
             p.purge();
         }
     }
+
+
+    // process a message
+   /* private void processMessage(Object o) {
+        debug.println(3, "[ " + name + " ] message " + message);
+        if (message instanceof JoinMessage) {
+            processJoinMessage((JoinMessage) message);
+        }
+        else {
+            debug.println(3, "[ " + name + " ] Unrecognized message: " + message);
+        }
+    }
+
+    */
+    // process the joinmessage
+   /*
+    private void processJoinMessage(JoinMessage message) {
+    //     this.name = message.name;
+    //    this.color = message.color;
+            transmitMessage( new JoinResponseMessage(this.name, this.playerID));
+    }
+    */
+
+    // transmit a message
+    /* public void transmitMessage(Object message) {
+         try {
+                synchronized(out) {
+              out.writeObject(message);
+              out.flush();
+               }
+
+         }
+         catch (IOException e) {
+             debug.println(3, "Error transmitting messgae");
+         }
+
+        }
+
+        */
+
+
 }

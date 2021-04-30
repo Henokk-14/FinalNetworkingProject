@@ -7,17 +7,31 @@
  * It is essentially inspired quite largely by Agar.io
  * And is designed to be a simple game to convert to a Networking game.
  ***************/
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.awt.Color;
 
 public class GameServer implements Runnable {
+    public static final int DEFAULT_PORT = 1340;
+
     GameState gameState;
     Debug debug;
-    
+    int port;
+    boolean done;
+
+
     public GameServer() {
         gameState = new GameState();
         debug = Debug.getInstance();
+
+
+
     }
+
 
     /**
      * Return a (deep) clone of the game state.
@@ -107,10 +121,44 @@ public class GameServer implements Runnable {
             p.purge();
         }
     }
+    class Connection extends Thread{
+        Socket socket;
+        PrintWriter out;
+        BufferedReader in;
+        boolean done;
+        String name;
+
+        public Connection(Socket socket, String name){
+            this.socket = socket;done = false; this.name = name;
+        }
+
+        public void run(){
+            try {
+                out = new PrintWriter(socket.getOutputStream(), true);
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+                while (!done) {
+                    String line = in.readLine();
+                    processline(line);
+
+                }
+            }catch(IOException e){
+                printMessage("I/O error while communicating with Clinet")
+            }
+
+            try{
+                printMessage("Clinet is closing down");
+                if(in != null) in.close();
+                if(out != null) out.close();
+                if(socket != null)
+
+            }
+        }
+    }
 
 
     // process a message
-   /* private void processMessage(Object o) {
+    private void processMessage(Object message) {
         debug.println(3, "[ " + name + " ] message " + message);
         if (message instanceof JoinMessage) {
             processJoinMessage((JoinMessage) message);
@@ -120,18 +168,18 @@ public class GameServer implements Runnable {
         }
     }
 
-    */
+
     // process the joinmessage
-   /*
+
     private void processJoinMessage(JoinMessage message) {
     //     this.name = message.name;
     //    this.color = message.color;
             transmitMessage( new JoinResponseMessage(this.name, this.playerID));
     }
-    */
+
 
     // transmit a message
-    /* public void transmitMessage(Object message) {
+     public void transmitMessage(Object message) {
          try {
                 synchronized(out) {
               out.writeObject(message);
@@ -145,7 +193,7 @@ public class GameServer implements Runnable {
 
         }
 
-        */
+
 
 
 }

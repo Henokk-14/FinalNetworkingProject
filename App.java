@@ -16,6 +16,8 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
 
 public class App extends JFrame {
     /**
@@ -43,9 +45,9 @@ public class App extends JFrame {
     private int port = GameServer.DEFAULT_PORT;
     private Connection connection = null;
     private Socket socket  = null;
-    private PrintWriter out = null;
-    private BufferedReader in = null;
-
+    private ObjectOutputStream out = null;
+    private ObjectInputStream in = null;
+    private String name;
 
     /* Constructor: Sets up the initial look-and-feel */
     public App() {
@@ -144,12 +146,16 @@ public class App extends JFrame {
                 establishConnection();
                 // Add yourself to the game and start the game running
                 // First get the name
-                String name = JOptionPane.showInputDialog("Please enter your name.");
+                 name = JOptionPane.showInputDialog("Please enter your name.");
 
                 // And the color
                 Color color = JColorChooser.showDialog(App.this,
                         "Select your color!",
                         Color.BLUE);
+
+                // passes color and name to the server
+                registerPlayer(color,name);
+
                 // "Register" the player
                 // playerID = gameServer.addPlayer(name, color);
 
@@ -169,8 +175,11 @@ public class App extends JFrame {
                 Color color = JColorChooser.showDialog(App.this,
                         "Select your color!",
                         Color.BLUE);
+
+
+
                 // "Register" the player
-                playerID = gameServer.addPlayer(name, color);
+              //  playerID = gameServer.addPlayer(name, color);
             }
         };
         menuAction.putValue(Action.SHORT_DESCRIPTION, "Join the game");
@@ -222,8 +231,8 @@ public class App extends JFrame {
 
         // Establish connection with the Inventory Server
         socket = new Socket(hostname, port);
-        out = new PrintWriter(socket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        out = new ObjectOutputStream(socket.getOutputStream());
+        in = new ObjectInputStream(socket.getInputStream());
         connection = new Connection();
         connection.start();
 
@@ -237,20 +246,77 @@ public class App extends JFrame {
      }
     }
 
+    public void registerPlayer(Color color, String name)  {
+       if (out != null ){
+
+           JoinMessage message = new JoinMessage(name,color);
+           try {
+
+
+               synchronized (out) {
+                   out.writeObject(message);
+                   out.flush();
+               }
+           }
+           catch(IOException e) {
+               debug.println(3, " Error");
+           }
+       } else {
+           debug.println(3, "No server connection has been establish");
+       }
+
+
+
+    }
+
+    public void playerJoin(String name, int playerID)  {
+        try {
+            JoinResponseMessage message = new JoinResponseMessage(name, playerID);
+
+            synchronized (out) {
+                out.writeObject(message);
+                out.flush();
+            }
+        } catch(IOException e) {
+                debug.println(3, " Error");
+            }
+    }
+
+
+
+// transmits a Object (message)
+    private void transmitMessage(Object message)  {
+
+        try {
+            synchronized (out) {
+                out.writeObject(message);
+                out.flush();
+            }
+        }
+        catch(IOException e) {
+            debug.println(3, " Error");
+        }
+
+    }
     // A connection to handle incomming communcation from the server
     public class Connection extends Thread {
     boolean done = false;
     public void run( ) {
         while(!done) {
             try {
-                String line = in.readLine();
-                processLine(line);
+                Object message = in.readObject();
+                processMessage(message);
+
+            }
+            catch (ClassNotFoundException e) {
+                debug.println(1, " Coding Error: Server transmitted unrecognized Object");
             }
             catch (IOException e) {
                 printMessage("IO Error: Error establishing communication with server.");
                 printMessage("          " + e.getMessage());
 
             }
+
 
         }
         try {
@@ -264,8 +330,13 @@ public class App extends JFrame {
         }
 
     }
-        private void processLine(String line) {
-            debug.println(3, "[ Connection ] Processing line: "  + line);
+        private void processMessage(Object message) {
+            // protocol for the server passing the playerID to client
+//            if(message instanceof JoinResponseMessage) {
+ //              playerJoin((JoinResponseMessage) message);
+
+//            }
+            debug.println(3, "[ Connection ] Processing line: "  + message);
         }
     }
 

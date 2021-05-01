@@ -332,13 +332,21 @@ public class App extends JFrame {
     }
         private void processMessage(Object message) {
             // protocol for the server passing the playerID to client
-//            if(message instanceof JoinResponseMessage) {
- //              playerJoin((JoinResponseMessage) message);
+            if(message instanceof JoinResponseMessage) {
+            processJoinResponseMessage((JoinResponseMessage) message);
 
-//            }
+           }
             debug.println(3, "[ Connection ] Processing line: "  + message);
         }
+            private void processJoinResponseMessage(JoinResponseMessage message) {
+            name = message.name;
+            playerID = message.playerID;
+            debug.println(3, "Player" + name + "is registered with id " + playerID);
+            transmitMessage(new JoinResponseMessage(name,playerID));
+        }
     }
+    // end of class connection
+
 
 
     private void printMessage(String message) {

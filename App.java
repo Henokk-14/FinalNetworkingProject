@@ -13,6 +13,8 @@ import javax.swing.*;
 import javax.swing.event.MouseInputAdapter;
 import java.awt.event.*;
 import java.io.*;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class App extends JFrame {
@@ -36,7 +38,15 @@ public class App extends JFrame {
     private Debug debug = Debug.getInstance();
     JDialog debugWindow = null;
     int playerID = -1;
-    
+    private String hostname = "127.0.0.1";
+    // need gamersever default port
+    private int port = GameServer.DEFAULT_PORT;
+    private Connection connection = null;
+    private Socket socket  = null;
+    private PrintWriter out = null;
+    private BufferedReader in = null;
+
+
     /* Constructor: Sets up the initial look-and-feel */
     public App() {
         JLabel label;  // Temporary variable for a label
@@ -54,7 +64,7 @@ public class App extends JFrame {
         // Create the Visualization Panel
         visPane = new VisPanel();
         mainPane.add(visPane);
-        
+
         // Set up the debug window
         setupDebugWindow();
 
@@ -92,50 +102,106 @@ public class App extends JFrame {
         JMenu menu;
         JMenuItem menuItem;
         Action menuAction;
-        menu = new JMenu("File");
-        menuAction = new AbstractAction("Join") {
-                public void actionPerformed(ActionEvent event) {
-                    // Add yourself to the game and start the game running
-                    // First get the name
-                    String name = JOptionPane.showInputDialog("Please enter your name.");
+        menu = new JMenu("Connection");
+        // Menu item to change server IP address (or hostname really)
+        menuAction = new AbstractAction("Change Server ") {
+            public void actionPerformed(ActionEvent e) {
+                String newHostName = JOptionPane.showInputDialog("Please enter a server IP/Hostname.\nThis only takes effect after the next connection attempt.\nCurrent server address: " + hostname);
+                if (newHostName != null && newHostName.length() > 0)
+                    hostname = newHostName;
+            }
+        };
+        menuAction.putValue(Action.SHORT_DESCRIPTION, "Change server host name.");
+        menuItem = new JMenuItem(menuAction);
+        menu.add(menuItem);
 
-                    // And the color
-                    Color color = JColorChooser.showDialog(App.this, 
-                                                           "Select your color!",
-                                                           Color.BLUE);
-                    // "Register" the player
-                    playerID = gameServer.addPlayer(name, color);
+        // Menu item to change the port to use
+        menuAction = new AbstractAction("Change Server PORT") {
+            public void actionPerformed(ActionEvent e) {
+                String portName = JOptionPane.showInputDialog("Please enter a server PORT.\nThis only takes effect after the next connection attempt.\nCurrent port: " + port);
+                if (portName != null && portName.length() > 0) {
+                    try {
+                        int p = Integer.parseInt(portName);
+                        if (p < 0 || p > 65535) {
+                            JOptionPane.showMessageDialog(null, "The port [" + portName + "] must be in the range 0 to 65535.", "Invalid Port Number", JOptionPane.ERROR_MESSAGE);
+                        } else {
+                            port = p;  // Valid.  Update the port
+                        }
+                    } catch (NumberFormatException ignore) {
+                        JOptionPane.showMessageDialog(null, "The port [" + portName + "] must be an integer.", "Number Format Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
-            };
+            }
+        };
+        menuAction.putValue(Action.SHORT_DESCRIPTION, "Change server PORT.");
+        menuItem = new JMenuItem(menuAction);
+        menu.add(menuItem);
+
+        // Menu item to create a connection
+        menuAction = new AbstractAction("Join Server") {
+            public void actionPerformed(ActionEvent e) {
+
+                establishConnection();
+                // Add yourself to the game and start the game running
+                // First get the name
+                String name = JOptionPane.showInputDialog("Please enter your name.");
+
+                // And the color
+                Color color = JColorChooser.showDialog(App.this,
+                        "Select your color!",
+                        Color.BLUE);
+                // "Register" the player
+                // playerID = gameServer.addPlayer(name, color);
+
+
+                }
+        };
+        menuAction.putValue(Action.SHORT_DESCRIPTION, "Change server PORT.");
+        menuItem = new JMenuItem(menuAction);
+        menu.add(menuItem);
+        menuAction = new AbstractAction("Join") {
+            public void actionPerformed(ActionEvent event) {
+                // Add yourself to the game and start the game running
+                // First get the name
+                String name = JOptionPane.showInputDialog("Please enter your name.");
+
+                // And the color
+                Color color = JColorChooser.showDialog(App.this,
+                        "Select your color!",
+                        Color.BLUE);
+                // "Register" the player
+                playerID = gameServer.addPlayer(name, color);
+            }
+        };
         menuAction.putValue(Action.SHORT_DESCRIPTION, "Join the game");
         menuItem = new JMenuItem(menuAction);
         menu.add(menuItem);
         mbar.add(menu);
-        
+
         menu = new JMenu("Monitor");
         menuAction = new AbstractAction("Debug Console") {
-                public void actionPerformed(ActionEvent event) {
-                    debugWindow.setLocationRelativeTo(debugWindow.getParent());
-                    debugWindow.setVisible(true);
-                }
-            };
+            public void actionPerformed(ActionEvent event) {
+                debugWindow.setLocationRelativeTo(debugWindow.getParent());
+                debugWindow.setVisible(true);
+            }
+        };
         menuAction.putValue(Action.SHORT_DESCRIPTION, "Show debug console");
         menuItem = new JMenuItem(menuAction);
         menu.add(menuItem);
         menuAction = new AbstractAction("Debug Level") {
-                public void actionPerformed(ActionEvent e) {
-                    String debugLevel = JOptionPane.showInputDialog("Please enter an integer to select debug level.");
-                    if (debugLevel != null && debugLevel.length() > 0) {
-                        try {
-                            int dl = Integer.parseInt(debugLevel);
-                            debug.setLevel(dl);
-                            debugWindow.setTitle("Debug Output (Level " + debug.getLevel() + ")");
-                        } catch (NumberFormatException ignore) {
-                            JOptionPane.showMessageDialog(null, "The debug level [" + debugLevel + "] must be an integer.", "Number Format Error", JOptionPane.ERROR_MESSAGE);
-                        }
+            public void actionPerformed(ActionEvent e) {
+                String debugLevel = JOptionPane.showInputDialog("Please enter an integer to select debug level.");
+                if (debugLevel != null && debugLevel.length() > 0) {
+                    try {
+                        int dl = Integer.parseInt(debugLevel);
+                        debug.setLevel(dl);
+                        debugWindow.setTitle("Debug Output (Level " + debug.getLevel() + ")");
+                    } catch (NumberFormatException ignore) {
+                        JOptionPane.showMessageDialog(null, "The debug level [" + debugLevel + "] must be an integer.", "Number Format Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
-            };
+            }
+        };
         menuAction.putValue(Action.SHORT_DESCRIPTION, "Set the Debug level");
         menuItem = new JMenuItem(menuAction);
         menu.add(menuItem);
@@ -143,13 +209,69 @@ public class App extends JFrame {
         setJMenuBar(mbar);
     }
 
-    /** 
+    /**
      * This just starts a thread going that runs the game.
      * It should be pulled out into a server class that manages the game!
      **/
     public void startServer() {
         gameServer = new GameServer();
         new Thread(gameServer).start();
+    }
+    public void establishConnection() {
+        try {
+
+        // Establish connection with the Inventory Server
+        socket = new Socket(hostname, port);
+        out = new PrintWriter(socket.getOutputStream(), true);
+        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        connection = new Connection();
+        connection.start();
+
+    } catch (UnknownHostException e) {
+            printMessage("Unknown host: " + hostname);
+            printMessage("             " + e.getMessage());
+        }
+     catch (IOException e) {
+        printMessage("IO Error: Error establishing communication with server.");
+        printMessage("          " + e.getMessage());
+     }
+    }
+
+    // A connection to handle incomming communcation from the server
+    public class Connection extends Thread {
+    boolean done = false;
+    public void run( ) {
+        while(!done) {
+            try {
+                String line = in.readLine();
+                processLine(line);
+            }
+            catch (IOException e) {
+                printMessage("IO Error: Error establishing communication with server.");
+                printMessage("          " + e.getMessage());
+
+            }
+
+        }
+        try {
+            //Close the socket
+            printMessage("Client is closing down");
+            if (out != null) out.close();
+            if (in != null) in.close();
+            if (socket != null) socket.close();
+        } catch (IOException e) {
+            printMessage("Error closing the streams.");
+        }
+
+    }
+        private void processLine(String line) {
+            debug.println(3, "[ Connection ] Processing line: "  + line);
+        }
+    }
+
+
+    private void printMessage(String message) {
+        debug.println(3,  message);
     }
 
     public class VisPanel extends JPanel {
@@ -201,6 +323,7 @@ public class App extends JFrame {
             g2.setPaint(new Color(200, 200, 220));
             g2.fillRect(0, 0, getWidth(), getHeight());
 
+            if (gameServer == null) return;
             GameState gameState = gameServer.getGameState();
             
             // Compute the dimensions of the world

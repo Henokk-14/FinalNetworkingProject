@@ -11,25 +11,30 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.awt.Color;
+import java.util.HashSet;
+import java.util.Set;
 
 public class GameServer implements Runnable {
     public static final int DEFAULT_PORT = 1340;
 
+    Set<Connection> connection; // Set of client connections
     GameState gameState;
     Debug debug;
     int port;
     boolean done;
 
-
     public GameServer() {
-        gameState = new GameState();
-        debug = Debug.getInstance();
-
-
-
+        this(DEFAULT_PORT);
+    }
+    public GameServer(int port) {
+        this.port = port;
+        this.gameState = new GameState();
+        this.debug = Debug.getInstance();
+        this.connection = new HashSet<>();
     }
 
 
@@ -67,8 +72,29 @@ public class GameServer implements Runnable {
     public synchronized void splitCells(int p, double fraction) {
         gameState.splitCells(p, fraction);
     }
-
+    /**
+     * Run the main server... just listen for and create connections
+     **/
     public void run() {
+        System.out.println("Inventory Server:  WELCOME!  Starting up...");
+        try {
+            // Create a server socket bound to the given port
+            ServerSocket serverSocket = new ServerSocket(port);
+
+            while (!done) {
+                // Wait for a client request, establish new thread, and repeat
+                Socket clientSocket = serverSocket.accept();
+                addConnection(clientSocket);
+            }
+        } catch (Exception e) {
+            System.err.println("ABORTING: An error occurred while creating server socket. " +
+                    e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    // main run method and runs instance of slither
+    public void runGame() {
         // First add a lot of random food cells
         for (int i = 0; i < 1000; i++)
             gameState.addRandomFood();
@@ -121,6 +147,13 @@ public class GameServer implements Runnable {
             p.purge();
         }
     }
+    public void addConnection(Socket clientSocket){
+        String name = clientSocket.getInetAddress().toString();
+        System.out.println("Inventory Server: Connecting to client: "+ name );
+        Connection c = new Connection(clientSocket,name);
+        connection.add(c);
+        c.start(); //start thread
+    }
     class Connection extends Thread{
         Socket socket;
         PrintWriter out;
@@ -139,34 +172,50 @@ public class GameServer implements Runnable {
 
                 while (!done) {
                     String line = in.readLine();
-                    processline(line);
+                    if(line == null){
+                        printMessage(1,"Line terminated finished");// level 1
+                        done = true;
+                    } else {
+                        processline(line);
+                    }
 
                 }
             }catch(IOException e){
-                printMessage("I/O error while communicating with Clinet")
+                printMessage(1,"I/O error while communicating with Clinet"); //lvl 1
+                printMessage(1," Message: " + e.getMessage()); //lvl 1
             }
 
             try{
-                printMessage("Clinet is closing down");
+                printMessage(1,"Clinet is closing down");
                 if(in != null) in.close();
                 if(out != null) out.close();
-                if(socket != null)
+                if(socket != null) socket.close();
+            } catch (IOException e) {
 
             }
         }
+
+        private void processline(String line) {
+            // process the line
+            printMessage(1,"Proccesing line: "+line);
+        }
+
+        // process a message
+        private void processMessage(Object message) {
+            debug.println(3, "[ " + name + " ] message " + message);
+            if (message instanceof JoinMessage) {
+                processJoinMessage((JoinMessage) message);
+            }
+            else {
+                debug.println(3, "[ " + name + " ] Unrecognized message: " + message);
+            }
+        }
+        //print message
+        public void printMessage(int lvl,String m) {
+            debug.println(lvl,"["+ name +"]:" + m);
+        }
     }
 
-
-    // process a message
-    private void processMessage(Object message) {
-        debug.println(3, "[ " + name + " ] message " + message);
-        if (message instanceof JoinMessage) {
-            processJoinMessage((JoinMessage) message);
-        }
-        else {
-            debug.println(3, "[ " + name + " ] Unrecognized message: " + message);
-        }
-    }
 
 
     // process the joinmessage
@@ -188,12 +237,8 @@ public class GameServer implements Runnable {
 
          }
          catch (IOException e) {
-             debug.println(3, "Error transmitting messgae");
+             debug.println(3, "Error transmitting message");
          }
 
-        }
-
-
-
-
+    }
 }

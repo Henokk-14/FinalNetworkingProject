@@ -404,8 +404,8 @@ public class App extends JFrame {
             g2.fillRect(0, 0, getWidth(), getHeight());
 
 
-            if (gameServer == null) return;
-            GameState gameState = gameServer.getGameState();
+            if (gameEngine == null) return;
+            GameState gameState = gameEngine.getGameState();
 
             
             // Compute the dimensions of the world

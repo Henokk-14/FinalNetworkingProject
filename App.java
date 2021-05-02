@@ -35,7 +35,7 @@ public class App extends JFrame {
     static final double MIN_WIDTH = 50; // Minimum dimensions of the screen for cells.
     static final double MIN_HEIGHT = 50;
 
-    private GameServer gameServer;
+    private GameEngine gameEngine;
     private VisPanel visPane;
     private Debug debug = Debug.getInstance();
     JDialog debugWindow = null;
@@ -104,6 +104,7 @@ public class App extends JFrame {
         JMenu menu;
         JMenuItem menuItem;
         Action menuAction;
+
         menu = new JMenu("Connection");
         // Menu item to change server IP address (or hostname really)
         menuAction = new AbstractAction("Change Server ") {
@@ -223,8 +224,8 @@ public class App extends JFrame {
      * It should be pulled out into a server class that manages the game!
      **/
     public void startServer() {
-        gameServer = new GameServer();
-        new Thread(gameServer).start();
+        gameEngine = new GameEngine();
+        new Thread(gameEngine).start();
     }
     public void establishConnection() {
         try {
@@ -377,7 +378,7 @@ public class App extends JFrame {
                         // TO DO: Ideally, it would be a timed click -- longer means more split
                         //   For now, we split the cell 50/50
                         debug.println(3, "App.vP.mIA: Mouse clicked.  Splitting cells!");
-                        gameServer.splitCells(playerID, 0.5);
+                        gameEngine.splitCells(playerID, 0.5);
                     }
                     
                     private void updateDirection(Point p) {
@@ -386,7 +387,7 @@ public class App extends JFrame {
                         double centerY = getHeight()/2.0;
                         double playerDX = p.x - centerX;
                         double playerDY = centerY - p.y;
-                        gameServer.setPlayerDirection(playerID, playerDX, playerDY);
+                        gameEngine.setPlayerDirection(playerID, playerDX, playerDY);
                     }
                 };
             addMouseMotionListener(mouseInputAdapter);
@@ -402,8 +403,10 @@ public class App extends JFrame {
             g2.setPaint(new Color(200, 200, 220));
             g2.fillRect(0, 0, getWidth(), getHeight());
 
+
             if (gameServer == null) return;
             GameState gameState = gameServer.getGameState();
+
             
             // Compute the dimensions of the world
             if (gameState == null) return;  // Nothing to draw yet anyway

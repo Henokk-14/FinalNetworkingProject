@@ -8,10 +8,7 @@
  * And is designed to be a simple game to convert to a Networking game.
  * This just handles game connections and communication.
  ***************/
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -46,6 +43,8 @@ public class GameServer implements Runnable {
             // Create a server socket bound to the given port
             ServerSocket serverSocket = new ServerSocket(port);
 
+            PushGameState();
+
             while (!done) {
                 // Wait for a client request, establish new thread, and repeat
                 Socket clientSocket = serverSocket.accept();
@@ -56,6 +55,31 @@ public class GameServer implements Runnable {
                     e.getMessage());
             System.exit(1);
         }
+    }
+
+    /**
+     * create a new thread whose sole purpose is to push out the game state
+     */
+    private void PushGameState() {
+        Thread t = new Thread(){
+                public void run(){
+                    while (!done){
+                        GameState curGS = gameEngine.getGameState();
+
+
+                        for(Connection con : connection){
+                            con.transmitMessage(curGS);
+                        }
+                        try{
+                            Thread.sleep(1000);
+
+                        }catch(InterruptedException e){
+
+                        }
+                    }
+        }
+        };
+        t.start();
     }
 
     public void addConnection(Socket clientSocket){
@@ -87,91 +111,98 @@ public class GameServer implements Runnable {
         GameServer s = new GameServer(port);
         s.run();
     }
-    class Connection extends Thread{
+    class Connection extends Thread {
         Socket socket;
-        PrintWriter out;
-        BufferedReader in;
+        ObjectOutputStream out;
+        ObjectInputStream in;
         boolean done;
         String name;
+        int playerID;
+        Color color;
 
-        public Connection(Socket socket, String name){
-            this.socket = socket;done = false; this.name = name;
+        public Connection(Socket socket, String name) {
+            this.socket = socket;
+            done = false;
+            this.name = name;
         }
 
-        public void run(){
+        public void run() {
             try {
-                out = new PrintWriter(socket.getOutputStream(), true);
-                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                out = new ObjectOutputStream(socket.getOutputStream());
+                in = new ObjectInputStream(socket.getInputStream());
 
                 while (!done) {
-                    String line = in.readLine();
-                    if(line == null){
-                        printMessage(1,"Line terminated finished");// level 1
+                    Object message = in.readObject();
+                    if (message == null) {
+                        printMessage(1, "Line terminated finished");// level 1
                         done = true;
                     } else {
-                        processline(line);
+                        processMessage(message);
                     }
 
                 }
-            }catch(IOException e){
-                printMessage(1,"I/O error while communicating with Clinet"); //lvl 1
-                printMessage(1," Message: " + e.getMessage()); //lvl 1
+            }catch(ClassNotFoundException e){
+                printMessage(1, "coding error: server sent an object that wasn't recognized.");
+            } catch (IOException e) {
+                printMessage(1, "I/O error while communicating with Clinet"); //lvl 1
+                printMessage(1, " Message: " + e.getMessage()); //lvl 1
             }
 
-            try{
-                printMessage(1,"Clinet is closing down");
-                if(in != null) in.close();
-                if(out != null) out.close();
-                if(socket != null) socket.close();
+            try {
+                printMessage(1, "Clinet is closing down");
+                if (in != null) in.close();
+                if (out != null) out.close();
+                if (socket != null) socket.close();
             } catch (IOException e) {
 
             }
         }
 
-        private void processline(String line) {
-            // process the line
-            printMessage(1,"Proccesing line: "+line);
-        }
+//        private void processline(String line) {
+//            // process the line
+//            printMessage(1, "Proccesing line: " + line);
+//        }
 
         // process a message
-        /*private void processMessage(Object message) {
+        private void processMessage(Object message) {
             debug.println(3, "[ " + name + " ] message " + message);
             if (message instanceof JoinMessage) {
                 processJoinMessage((JoinMessage) message);
-            }
-            else {
+            } else {
                 debug.println(3, "[ " + name + " ] Unrecognized message: " + message);
             }
-        }*/
+        }
+
         //print message
-        public void printMessage(int lvl,String m) {
-            debug.println(lvl,"["+ name +"]:" + m);
+        public void printMessage(int lvl, String m) {
+            debug.println(lvl, "[" + name + "]:" + m);
+        }
+
+
+        // process the joinmessage
+
+        private void processJoinMessage(JoinMessage message) {
+            this.name = message.name;
+            this.color = message.color;
+            playerID = gameEngine.addPlayer(this.name, this.color);
+            transmitMessage(new JoinResponseMessage(this.name, this.playerID));
+        }
+
+
+        // transmit a message
+        public void transmitMessage(Object message) {
+            if(out == null)return;
+            try {
+                synchronized (out) {
+                    out.reset();
+                    out.writeObject(message);
+                    out.flush();
+                }
+
+            } catch (IOException e) {
+                debug.println(3, "Error transmitting message");
+            }
+
         }
     }
-
-
-
-    // process the joinmessage
-
-/*    private void processJoinMessage(JoinMessage message) {
-    //     this.name = message.name;
-    //    this.color = message.color;
-            transmitMessage( new JoinResponseMessage(this.name, this.playerID));
-    }
-
-
-    // transmit a message
-     public void transmitMessage(Object message) {
-         try {
-                synchronized(out) {
-              out.writeObject(message);
-              out.flush();
-               }
-
-         }
-         catch (IOException e) {
-             debug.println(3, "Error transmitting message");
-         }
-
-    }*/
 }

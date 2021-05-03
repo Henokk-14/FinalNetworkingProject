@@ -8,11 +8,11 @@ leaderboard
 
 
 # Commitments 
-Bryan Sullivan:
+Bryan Sullivan: worked on adding/accepting connections from the client in the gameserver with Henok,
+Henok Ketsela: worked on adding/accepting connections from the client in the gameserver with Bryan,
 Dylan Irwin:
 Harrison Dominique:
-Henok Ketsela:
-Jack Zelanicky
+Jack Zelanicky:
 
 # Notes
 Game Client, game server,

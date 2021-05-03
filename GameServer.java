@@ -2,18 +2,20 @@
  * GameServer
  * Author: Christian Duncan
  * Spring 21: CSC340
- * 
+ *
  * This is the Server for the Petrio game.
  * It is essentially inspired quite largely by Agar.io
  * And is designed to be a simple game to convert to a Networking game.
  ***************/
 import java.util.ArrayList;
 import java.awt.Color;
+import java.io.*;
+
 
 public class GameServer implements Runnable {
     GameState gameState;
     Debug debug;
-    
+
     public GameServer() {
         gameState = new GameState();
         debug = Debug.getInstance();
@@ -24,12 +26,29 @@ public class GameServer implements Runnable {
      * Thus any changes to the game state must be made through the game server.
      **/
     public GameState getGameState() {
-        try {
-            return (GameState) gameState.clone();
-        } catch (CloneNotSupportedException e) {
-            debug.println(1, "Coding error: GameState cloning is not supported.  Why not?");
-        }
+      try {
+        byte[] byteCopy = getGameStateBinary();
+        ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(byteCopy));
+        GameState copy = (GameState) (in.readObject());
+        return copy;
+      } catch (ClassNotFoundException | IOException e) {
+        debug.println(1, "[GameServer.gGS]: Coding Error!");
         return null;
+      }
+    }
+
+    public byte[] getGameStateBinary() {
+      try {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bout);
+        synchronized(gameState) {
+          out.writeObject(gameState);
+        }
+        return bout.toByteArray();
+      } catch (IOException e) {
+        debug.println(1, "[GameServer.gGSB]: Coding Error!");
+        return null;
+      }
     }
 
     public synchronized int addPlayer(String name, Color color) {
@@ -48,16 +67,18 @@ public class GameServer implements Runnable {
     }
 
     /**
-     * Split all cells for this player by the given fraction amount in their moving direction
+     * Set a player p's speed
+     * @param p The player (index) to move
+     * @param s New speed
      **/
-    public synchronized void splitCells(int p, double fraction) {
-        gameState.splitCells(p, fraction);
+    public synchronized void setPlayerSpeed(int p, double s) {
+        gameState.setPlayerSpeed(p, s);
     }
 
     public void run() {
         // First add a lot of random food cells
         for (int i = 0; i < 1000; i++)
-            gameState.addRandomFood();
+            gameState.addRandomSnack();
 
         long currentTime = System.currentTimeMillis();
         while (!gameState.isDone()) {
@@ -66,45 +87,46 @@ public class GameServer implements Runnable {
             long newTime = System.currentTimeMillis();
             long delta = newTime - currentTime;
             currentTime = newTime;
-            
+
             // Move all of the players
             synchronized (this) {
-                gameState.moveAllPlayers(delta/20);  // Speed to move in
+                gameState.moveAllPlayers(delta/1000.0);  // Speed to move in
             }
-            
+
             // Add some more food.  (Could do this periodically instead but for now ALL the time)
             synchronized (this) {
-                gameState.addRandomFood();
+                gameState.addRandomSnack();
             }
 
             // Detect all collisions
             detectCollisions();
 
             try {
-                Thread.sleep(100);
+                Thread.sleep(1);
             } catch (Exception e) { }
-        } 
+        }
     }
 
     private synchronized void detectCollisions() {
         ArrayList<GameState.Player> player = gameState.getPlayers();
-        GameState.Player food = gameState.getFood();
+        ArrayList<GameState.Cell> snacks =  gameState.getSnacks();
 
         // First check for collisions with food
-        for (GameState.Player p: player) p.collisions(food);
-        food.purge();
-        
+        for (GameState.Player p: player) p.collisions(snacks, true);
+        gameState.purgeSnacks();
+
         // Now check for collisions with all the players (including themselves)
         int size = player.size();
         for (int i = 0; i < size; i++) {
             GameState.Player p = player.get(i);
-            for (int j = i; j < size; j++) {
-                GameState.Player q = player.get(j);
-                p.collisions(q);  // Compute collisions between these two players
+            for (int j = 0; j < size; j++) {
+                if (i != j) {
+                  GameState.Player q = player.get(j);
+                  p.collisions(q);  // Compute collisions between these two players
+                }
             }
-
             // And purge this player's dead cells at end
-            p.purge();
+            // TODO: REMOVE DEAD PLAYERS
         }
     }
 

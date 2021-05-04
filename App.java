@@ -168,19 +168,15 @@ public class App extends JFrame {
         menu.add(menuItem);
         menuAction = new AbstractAction("Join") {
             public void actionPerformed(ActionEvent event) {
+                establishConnection();
                 // Add yourself to the game and start the game running
                 // First get the name
                 String name = JOptionPane.showInputDialog("Please enter your name.");
-
                 // And the color
-                Color color = JColorChooser.showDialog(App.this,
-                        "Select your color!",
-                        Color.BLUE);
-
-
-
-                // "Register" the player
-              //  playerID = gameServer.addPlayer(name, color);
+                Color color = JColorChooser.showDialog(App.this,"Select your color!", Color.BLUE);
+                // "Register" the player (only if the client is connected to a server that is currently running)
+                registerPlayer(color,name);
+                //  playerID = gameServer.addPlayer(name, color);
             }
         };
         menuAction.putValue(Action.SHORT_DESCRIPTION, "Join the game");
@@ -249,11 +245,8 @@ public class App extends JFrame {
 
     public void registerPlayer(Color color, String name)  {
        if (out != null ){
-
            JoinMessage message = new JoinMessage(name,color);
            try {
-
-
                synchronized (out) {
                    out.writeObject(message);
                    out.flush();
@@ -263,7 +256,7 @@ public class App extends JFrame {
                debug.println(3, " Error");
            }
        } else {
-           debug.println(3, "No server connection has been establish");
+           debug.println(3, "No server connection has been established, registerPlayer failed");
        }
 
 
@@ -332,12 +325,23 @@ public class App extends JFrame {
 
     }
         private void processMessage(Object message) {
-            // protocol for the server passing the playerID to client
-            if(message instanceof JoinResponseMessage) {
-            processJoinResponseMessage((JoinResponseMessage) message);
-
-           }
             debug.println(3, "[ Connection ] Processing line: "  + message);
+            // protocol for the server passing the playerID to client
+            //see if the received message is an instance of one of our several message types
+            if(message instanceof JoinResponseMessage) {
+                processJoinResponseMessage((JoinResponseMessage) message);
+            }
+            else if(message instanceof JoinMessage){
+                //processJoinMessage method    
+            }
+            else if(message instanceof MovePlayerMessage){
+                //prcoessMovePlayerMessage method
+            }
+            else if(message instanceof StringMessage){
+                //processStringMessage method
+            }
+            else debug.println(5, "Incoming message not recognized by any message instance");
+
         }
             private void processJoinResponseMessage(JoinResponseMessage message) {
             name = message.name;
@@ -363,13 +367,13 @@ public class App extends JFrame {
             MouseInputAdapter mouseInputAdapter = new MouseInputAdapter() {
                     public void mouseDragged(MouseEvent e) {
                         Point p = e.getPoint();  // Get point relative to this component
-                        debug.println(5, "App.VP: Mouse dragged to position " + p);
+                        //debug.println(5, "App.VP: Mouse dragged to position " + p);
                         updateDirection(p);
                     }
                     
                     public void mouseMoved(MouseEvent e) {
                         Point p = e.getPoint();  // Get point relative to this component
-                        debug.println(5, "App.VP: Mouse moved to position " + p);
+                        //debug.println(5, "App.VP: Mouse moved to position " + p);
                         updateDirection(p);
                     }
 

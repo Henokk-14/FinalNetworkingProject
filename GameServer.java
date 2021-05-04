@@ -103,28 +103,31 @@ public class GameServer implements Runnable {
         gameState.setPlayerSpeed(p, s);
     }
 
-    public void run() {
-        // First add a lot of random food cells
-        for (int i = 0; i < 1000; i++)
-            gameState.addRandomSnack();
-
-        long currentTime = System.currentTimeMillis();
-        while (!gameState.isDone()) {
-            debug.println(10, "(GameServer.run) Executing...");
-            // Compute elapsed time since last iteration
-            long newTime = System.currentTimeMillis();
-            long delta = newTime - currentTime;
-            currentTime = newTime;
-
-            // Move all of the players
-            synchronized (this) {
-                gameState.moveAllPlayers(delta/1000.0);  // Speed to move in
-            }
-
-            // Add some more food.  (Could do this periodically instead but for now ALL the time)
-            synchronized (this) {
-                gameState.addRandomSnack();
-
+    // public void run() {
+    //     // First add a lot of random food cells
+    //     for (int i = 0; i < 1000; i++)
+    //         gameState.addRandomSnack();
+    //
+    //     long currentTime = System.currentTimeMillis();
+    //     while (!gameState.isDone()) {
+    //         debug.println(10, "(GameServer.run) Executing...");
+    //         // Compute elapsed time since last iteration
+    //         long newTime = System.currentTimeMillis();
+    //         long delta = newTime - currentTime;
+    //         currentTime = newTime;
+    //
+    //         // Move all of the players
+    //         synchronized (this) {
+    //             gameState.moveAllPlayers(delta/1000.0);  // Speed to move in
+    //         }
+    //
+    //         // Add some more food.  (Could do this periodically instead but for now ALL the time)
+    //         synchronized (this) {
+    //             gameState.addRandomSnack();
+    //         }
+    //     }
+    // }
+    /**
      * The main entry point.  It just processes the command line argument
      * and starts an instance of the InventoryServer running.
      **/
@@ -148,7 +151,6 @@ public class GameServer implements Runnable {
             try {
                 Thread.sleep(1);
             } catch (Exception e) { }
-        }
 
         // Create and start the server
         GameServer s = new GameServer(port);
@@ -165,28 +167,28 @@ public class GameServer implements Runnable {
             this.socket = socket;done = false; this.name = name;
         }
 
-    private synchronized void detectCollisions() {
-        ArrayList<GameState.Player> player = gameState.getPlayers();
-        ArrayList<GameState.Cell> snacks =  gameState.getSnacks();
-
-        // First check for collisions with food
-        for (GameState.Player p: player) p.collisions(snacks, true);
-        gameState.purgeSnacks();
-
-        // Now check for collisions with all the players (including themselves)
-        int size = player.size();
-        for (int i = 0; i < size; i++) {
-            GameState.Player p = player.get(i);
-            for (int j = 0; j < size; j++) {
-                if (i != j) {
-                  GameState.Player q = player.get(j);
-                  p.collisions(q);  // Compute collisions between these two players
-                }
-            }
-            // And purge this player's dead cells at end
-            // TODO: REMOVE DEAD PLAYERS
-        }
-    }
+    // private synchronized void detectCollisions() {
+    //     ArrayList<GameState.Player> player = gameState.getPlayers();
+    //     ArrayList<GameState.Cell> snacks =  gameState.getSnacks();
+    //
+    //     // First check for collisions with food
+    //     for (GameState.Player p: player) p.collisions(snacks, true);
+    //     gameState.purgeSnacks();
+    //
+    //     // Now check for collisions with all the players (including themselves)
+    //     int size = player.size();
+    //     for (int i = 0; i < size; i++) {
+    //         GameState.Player p = player.get(i);
+    //         for (int j = 0; j < size; j++) {
+    //             if (i != j) {
+    //               GameState.Player q = player.get(j);
+    //               p.collisions(q);  // Compute collisions between these two players
+    //             }
+    //         }
+    //         // And purge this player's dead cells at end
+    //         // TODO: REMOVE DEAD PLAYERS
+    //     }
+    // }
 
         public void run(){
             try {
@@ -204,12 +206,12 @@ public class GameServer implements Runnable {
 
                 }
             }catch(IOException e){
-                printMessage(1,"I/O error while communicating with Clinet"); //lvl 1
+                printMessage(1,"I/O error while communicating with Client"); //lvl 1
                 printMessage(1," Message: " + e.getMessage()); //lvl 1
             }
 
             try{
-                printMessage(1,"Clinet is closing down");
+                printMessage(1,"Client is closing down");
                 if(in != null) in.close();
                 if(out != null) out.close();
                 if(socket != null) socket.close();

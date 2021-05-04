@@ -95,19 +95,18 @@ public class App extends JFrame {
         Action menuAction;
         menu = new JMenu("File");
         menuAction = new AbstractAction("Join") {
-                public void actionPerformed(ActionEvent event) {
-                    // Add yourself to the game and start the game running
-                    // First get the name
-                    String name = JOptionPane.showInputDialog("Please enter your name.");
-
-                    // And the color
-                    Color color = JColorChooser.showDialog(App.this,
-                                                           "Select your color!",
-                                                           Color.BLUE);
-                    // "Register" the player
-                    playerID = gameServer.addPlayer(name, color);
-                }
-            };
+            public void actionPerformed(ActionEvent event) {
+                establishConnection();
+                // Add yourself to the game and start the game running
+                // First get the name
+                String name = JOptionPane.showInputDialog("Please enter your name.");
+                // And the color
+                Color color = JColorChooser.showDialog(App.this,"Select your color!", Color.BLUE);
+                // "Register" the player (only if the client is connected to a server that is currently running)
+                registerPlayer(color,name);
+                //  playerID = gameServer.addPlayer(name, color);
+            }
+        };
         menuAction.putValue(Action.SHORT_DESCRIPTION, "Join the game");
         menuItem = new JMenuItem(menuAction);
         menu.add(menuItem);
@@ -149,8 +148,142 @@ public class App extends JFrame {
      * It should be pulled out into a server class that manages the game!
      **/
     public void startServer() {
-        gameServer = new GameServer();
-        new Thread(gameServer).start();
+        gameEngine = new GameEngine();
+        new Thread(gameEngine).start();
+    }
+    public void establishConnection() {
+        try {
+
+        // Establish connection with the Inventory Server
+        socket = new Socket(hostname, port);
+        out = new ObjectOutputStream(socket.getOutputStream());
+        in = new ObjectInputStream(socket.getInputStream());
+        connection = new Connection();
+        connection.start();
+
+    } catch (UnknownHostException e) {
+            printMessage("Unknown host: " + hostname);
+            printMessage("             " + e.getMessage());
+        }
+     catch (IOException e) {
+        printMessage("IO Error: Error establishing communication with server.");
+        printMessage("          " + e.getMessage());
+     }
+    }
+
+    public void registerPlayer(Color color, String name)  {
+       if (out != null ){
+           JoinMessage message = new JoinMessage(name,color);
+           try {
+               synchronized (out) {
+                   out.writeObject(message);
+                   out.flush();
+               }
+           }
+           catch(IOException e) {
+               debug.println(3, " Error");
+           }
+       } else {
+           debug.println(3, "No server connection has been established, registerPlayer failed");
+       }
+
+
+
+    }
+
+    public void playerJoin(String name, int playerID)  {
+        try {
+            JoinResponseMessage message = new JoinResponseMessage(name, playerID);
+
+            synchronized (out) {
+                out.writeObject(message);
+                out.flush();
+            }
+        } catch(IOException e) {
+                debug.println(3, " Error");
+            }
+    }
+
+
+
+// transmits a Object (message)
+    private void transmitMessage(Object message)  {
+
+        try {
+            synchronized (out) {
+                out.writeObject(message);
+                out.flush();
+            }
+        }
+        catch(IOException e) {
+            debug.println(3, " Error");
+        }
+
+    }
+    // A connection to handle incomming communcation from the server
+    public class Connection extends Thread {
+    boolean done = false;
+    public void run( ) {
+        while(!done) {
+            try {
+                Object message = in.readObject();
+                processMessage(message);
+
+            }
+            catch (ClassNotFoundException e) {
+                debug.println(1, " Coding Error: Server transmitted unrecognized Object");
+            }
+            catch (IOException e) {
+                printMessage("IO Error: Error establishing communication with server.");
+                printMessage("          " + e.getMessage());
+
+            }
+
+
+        }
+        try {
+            //Close the socket
+            printMessage("Client is closing down");
+            if (out != null) out.close();
+            if (in != null) in.close();
+            if (socket != null) socket.close();
+        } catch (IOException e) {
+            printMessage("Error closing the streams.");
+        }
+
+    }
+        private void processMessage(Object message) {
+            debug.println(3, "[ Connection ] Processing line: "  + message);
+            // protocol for the server passing the playerID to client
+            //see if the received message is an instance of one of our several message types
+            if(message instanceof JoinResponseMessage) {
+                processJoinResponseMessage((JoinResponseMessage) message);
+            }
+            else if(message instanceof JoinMessage){
+                //processJoinMessage method    
+            }
+            else if(message instanceof MovePlayerMessage){
+                //prcoessMovePlayerMessage method
+            }
+            else if(message instanceof StringMessage){
+                //processStringMessage method
+            }
+            else debug.println(5, "Incoming message not recognized by any message instance");
+
+        }
+            private void processJoinResponseMessage(JoinResponseMessage message) {
+            name = message.name;
+            playerID = message.playerID;
+            debug.println(3, "Player" + name + "is registered with id " + playerID);
+            transmitMessage(new JoinResponseMessage(name,playerID));
+        }
+    }
+    // end of class connection
+
+
+
+    private void printMessage(String message) {
+        debug.println(3,  message);
     }
 
     public class VisPanel extends JPanel {
@@ -162,13 +295,13 @@ public class App extends JFrame {
             MouseInputAdapter mouseInputAdapter = new MouseInputAdapter() {
                     public void mouseDragged(MouseEvent e) {
                         Point p = e.getPoint();  // Get point relative to this component
-                        debug.println(5, "App.VP: Mouse dragged to position " + p);
+                        //debug.println(5, "App.VP: Mouse dragged to position " + p);
                         updateDirection(p);
                     }
 
                     public void mouseMoved(MouseEvent e) {
                         Point p = e.getPoint();  // Get point relative to this component
-                        debug.println(5, "App.VP: Mouse moved to position " + p);
+                        //debug.println(5, "App.VP: Mouse moved to position " + p);
                         updateDirection(p);
                     }
 

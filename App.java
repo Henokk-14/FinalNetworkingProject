@@ -36,6 +36,7 @@ public class App extends JFrame {
     static final double MIN_HEIGHT = 50;
 
     private GameEngine gameEngine;
+    private GameState gameState;
     private VisPanel visPane;
     private Debug debug = Debug.getInstance();
     JDialog debugWindow = null;
@@ -217,10 +218,10 @@ public class App extends JFrame {
      * This just starts a thread going that runs the game.
      * It should be pulled out into a server class that manages the game!
      **/
-    // public void startServer() {
-    //     gameEngine = new GameEngine();
-    //     new Thread(gameEngine).start();
-    // }
+     public void startServer() {
+         gameEngine = new GameEngine();
+         new Thread(gameEngine).start();
+     }
     public void establishConnection() {
         try {
 
@@ -303,6 +304,9 @@ class Connection extends Thread {
             if(message instanceof JoinResponseMessage) {
                 processJoinResponseMessage((JoinResponseMessage) message);
             }
+            else if(message instanceof GameState){
+                processGameStateMessage((GameState) message);
+            }
             else if(message instanceof JoinMessage){
                 //processJoinMessage method    
             }
@@ -315,10 +319,16 @@ class Connection extends Thread {
             else debug.println(5, "Incoming message not recognized by any message instance");
 
         }
+        //process an incoming game state
+        private void processGameStateMessage(GameState state){
+            gameState=state;
+            debug.println(3, "Successfully processed a gameStateMessage.");
+            state.display(debug.getStream());
+        }
         private void processJoinResponseMessage(JoinResponseMessage message) {
             //name = message.name;
             playerID = message.playerID;
-            debug.println(3, "Successfully processed the JoinResonseMessage, player" + name + " is registered with ID: " + playerID);
+            debug.println(3, "Successfully processed a JoinResponseMessage, player " + name + " is registered with ID: " + playerID);
         }
         public void transmitMessage(Object message)  {
             try {
@@ -363,7 +373,12 @@ class Connection extends Thread {
                         // TO DO: Ideally, it would be a timed click -- longer means more split
                         //   For now, we split the cell 50/50
                         debug.println(3, "App.vP.mIA: Mouse clicked.  Splitting cells!");
-                        gameEngine.splitCells(playerID, 0.5);
+                        if(gameEngine!=null){
+                            gameEngine.splitCells(playerID, 0.5);
+                        }
+                        else{
+                            //Transmit a request to split the cells 
+                        }
                     }
                     
                     private void updateDirection(Point p) {
@@ -372,7 +387,12 @@ class Connection extends Thread {
                         double centerY = getHeight()/2.0;
                         double playerDX = p.x - centerX;
                         double playerDY = centerY - p.y;
-                        gameEngine.setPlayerDirection(playerID, playerDX, playerDY);
+                        if(gameEngine != null){
+                            gameEngine.setPlayerDirection(playerID, playerDX, playerDY);
+                        }
+                        else{
+                            //transmit movement message to the server
+                        }
                     }
                 };
             addMouseMotionListener(mouseInputAdapter);
@@ -387,17 +407,18 @@ class Connection extends Thread {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setPaint(new Color(200, 200, 220));
             g2.fillRect(0, 0, getWidth(), getHeight());
-
-
-            if (gameEngine == null) return;
-            GameState gameState = gameEngine.getGameState();
+            if (gameEngine != null) {
+                GameState gameState = gameEngine.getGameState();
+            }
 
             
             // Compute the dimensions of the world
             if (gameState == null) return;  // Nothing to draw yet anyway
 
+            if(gameState != null)return;
             Rectangle2D.Double bounds = null;
-            if (playerID == -1) {
+            //was if(playerID==-1)
+            if (playerID != -2) {
                 bounds = new Rectangle2D.Double(0, 0, gameState.maxX, gameState.maxY);
             } else {
                 // Get some nice bounds around the player's cells

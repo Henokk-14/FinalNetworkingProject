@@ -48,6 +48,7 @@ public class GameServer implements Runnable {
             // Create a server socket bound to the given port
             ServerSocket serverSocket = new ServerSocket(port);
 
+            createPusher();
             while (!done) {
                 // Wait for a client request, establish new thread, and repeat
                 Socket clientSocket = serverSocket.accept();
@@ -59,7 +60,27 @@ public class GameServer implements Runnable {
             System.exit(1);
         }
     }
-
+    //creates a new thread with the purpose of pushing the game state every so often
+    private void createPusher(){
+        Thread t=new Thread(){
+            public void run(){
+                while(!done){
+                    GameState currentState=gameEngine.getGameState();
+                    for(Connection c: connection){
+                        c.transmitMessage(currentState);
+                    }
+                    debug.println(3, "Pushing a message (soon will push game state)");
+                    try{
+                        Thread.sleep(1000);
+                    }
+                    catch(InterruptedException e){
+                    } 
+                }
+            }
+        };
+        t.start();
+    }
+    //creates a new thread with the client connection
     public void addConnection(Socket clientSocket){
         String name = clientSocket.getInetAddress().toString();
         System.out.println("Inventory Server: Connecting to client: "+ name );
@@ -136,6 +157,10 @@ public class GameServer implements Runnable {
             } catch (IOException e) {
 
             }
+            in=null;
+            out=null;
+            socket=null;
+        
         }
         //processes a message that has been sent through this connection
         private void processMessage(Object message) {
@@ -165,11 +190,12 @@ public class GameServer implements Runnable {
             debug.println(lvl,"["+ name +"]:" + m);
         }
         public void transmitMessage(Object message) {
+            if(out==null)return;
             try {
-                   synchronized(out) {
-                 out.writeObject(message);
-                 out.flush();
-                  }
+                synchronized(out) {
+                   out.writeObject(message);
+                   out.flush();
+                   }
    
             }
             catch (IOException e) {

@@ -2,7 +2,7 @@
  * App
  * Author: Christian Duncan
  * Spring 21: CSC340
- * 
+ *
  * This is the Main GUI interface to the Petrio game.
  * It is essentially inspired quite largely by Agar.io
  * And is designed to be a simple game to convert to a Networking game.
@@ -16,6 +16,7 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 
@@ -357,7 +358,7 @@ public class App extends JFrame {
     public class VisPanel extends JPanel {
         Graphics2D g2;
         double viewportSize = 100.0;
-        
+
         public VisPanel() {
             setPreferredSize(new Dimension(1000,1000) ); // Set size of drawing area, in pixels.
             MouseInputAdapter mouseInputAdapter = new MouseInputAdapter() {
@@ -366,21 +367,27 @@ public class App extends JFrame {
                         debug.println(5, "App.VP: Mouse dragged to position " + p);
                         updateDirection(p);
                     }
-                    
+
                     public void mouseMoved(MouseEvent e) {
                         Point p = e.getPoint();  // Get point relative to this component
                         debug.println(5, "App.VP: Mouse moved to position " + p);
                         updateDirection(p);
                     }
 
-                    public void mouseClicked(MouseEvent e) {
-                        // If this mouse is clicked, then do a split
-                        // TO DO: Ideally, it would be a timed click -- longer means more split
-                        //   For now, we split the cell 50/50
-                        debug.println(3, "App.vP.mIA: Mouse clicked.  Splitting cells!");
-                        gameEngine.splitCells(playerID, 0.5);
-                    }
-                    
+                    public void mousePressed(MouseEvent e) {
+                         // If this mouse is pressed (held), then speed up
+                         GameState gameState = new GameState();
+                         debug.println(3, "App.vP.mIA: Mouse pressed.  Feature Pending!");
+                         updateSpeed(2*GameState.MIN_SPEED);
+                     }
+
+                     public void mouseReleased(MouseEvent e) {
+                         // If this mouse is released, go to normal speed
+                         GameState gameState = new GameState();
+                         debug.println(3, "App.vP.mIA: Mouse released.  Feature Pending!");
+                         updateSpeed(GameState.MIN_SPEED);
+                     }
+
                     private void updateDirection(Point p) {
                         if (playerID == -1) return;  // No player to update
                         double centerX = getWidth()/2.0;
@@ -388,6 +395,11 @@ public class App extends JFrame {
                         double playerDX = p.x - centerX;
                         double playerDY = centerY - p.y;
                         gameEngine.setPlayerDirection(playerID, playerDX, playerDY);
+                    }
+
+                    private void updateSpeed(double s) {
+                        if (playerID == -1) return;  // No player to update
+                        gameEngine.setPlayerSpeed(playerID, s);
                     }
                 };
             addMouseMotionListener(mouseInputAdapter);
@@ -403,11 +415,11 @@ public class App extends JFrame {
             g2.setPaint(new Color(200, 200, 220));
             g2.fillRect(0, 0, getWidth(), getHeight());
 
-
-            if (gameEngine == null) return;
             GameState gameState = gameEngine.getGameState();
 
-            
+            if (gameEngine == null) return;
+
+
             // Compute the dimensions of the world
             if (gameState == null) return;  // Nothing to draw yet anyway
 
@@ -451,7 +463,7 @@ public class App extends JFrame {
          */
         private void setupViewport(double left, double right, double bottom, double top) {
             // Get width and height in pixels of panel.
-            int width = getWidth();  
+            int width = getWidth();
             int height = getHeight();
 
             // Correct viewport dimensions to preserve aspect ratio
@@ -463,7 +475,7 @@ public class App extends JFrame {
                 bottom += padding;
                 top -= padding;
             }
-            else { 
+            else {
                 // Expand the viewport horizontally
                 double padding = (right-left)*(viewAspect/panelAspect - 1)/2;
                 right += padding;
@@ -476,7 +488,7 @@ public class App extends JFrame {
 
         private void drawGameState(GameState gameState) {
             if (gameState == null) return;   // No game to display yet!
-            
+
             if (cellFont == null) {
                 // Create the cell font
                 cellFont = new Font("Serif", Font.BOLD, 18);
@@ -485,10 +497,9 @@ public class App extends JFrame {
             // Not sure if it changes as screen size changes for example. So getting it each redisplay
             cellFontMetrics = g2.getFontMetrics(cellFont);
 
-            // Draw the food first
-            GameState.Player food = gameState.getFood();
-            drawPlayer(food);
-            
+            // Draw the snacks first
+            drawSnacks(gameState);
+
             // Iterate through all of the players and all of the cells in the game
             // Again, not done super efficiently - could crop ones that are not visible!
             ArrayList<GameState.Player> player = gameState.getPlayers();
@@ -499,22 +510,32 @@ public class App extends JFrame {
 
         // Draw the cells for this player
         private void drawPlayer(GameState.Player p) {
-            ArrayList<GameState.Cell> cell = p.getCells();
+            Deque<GameState.Cell> cell = p.getCells();
             String name = p.getName();
             Color appearance = p.getAppearance();
             for (GameState.Cell c: cell) {
-                drawCell(c.x, c.y, c.r, name, appearance);
+                drawCell(c.x, c.y, c.r, null, appearance);
             }
+            GameState.Cell head = cell.peekFirst();
+            drawCell(head.x, head.y, head.r, name, appearance);
         }
-            
+
+        // Draw the cells for the snacks
+         private void drawSnacks(GameState gameState) {
+             ArrayList<GameState.Cell> snacks = gameState.getSnacks();
+             for (GameState.Cell s: snacks) {
+                 drawCell(s.x, s.y, s.r, null, gameState.snackColor);
+             }
+         }
+
         // Could make it configurable but why...
         private Font cellFont = null;
         private FontMetrics cellFontMetrics = null;
-        
+
         private void drawCell(double cx, double cy, double radius, String text, Color color) {
             AffineTransform cs = g2.getTransform();
             g2.translate(cx, cy);   // Make cx,cy the center... easier to think about.
-            
+
             g2.setPaint(color);
             double diam = radius*2;
             Ellipse2D circ = new Ellipse2D.Double(-radius, -radius, diam, diam);
@@ -540,7 +561,7 @@ public class App extends JFrame {
             g2.setTransform(cs);
         }
     }
-    
+
     private class TextStreamer extends OutputStream {
         JTextArea txt;
         StringBuilder buffer;
@@ -579,4 +600,3 @@ public class App extends JFrame {
         }
     }
 }
-

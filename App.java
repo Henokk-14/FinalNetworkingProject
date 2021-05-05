@@ -385,13 +385,21 @@ class Connection extends Thread {
                             gameEngine.setPlayerDirection(playerID, playerDX, playerDY);
                         }
                         else{
-                            //transmit movement message to the server
+                            //transmit movement message to the server (if playing online)
+                            connection.transmitMessage(new MovePlayerMessage(playerDX, playerDY));
                         }
                     }
 
                     private void updateSpeed(double s) {
                         if (playerID == -1) return;  // No player to update
-                        gameEngine.setPlayerSpeed(playerID, s);
+                        if(gameEngine!=null){
+                            gameEngine.setPlayerSpeed(playerID, s);
+                        }
+                        else{
+                            //transmit a speed update message to server
+                            //connection.transmitMessage(new BoostPlayerMessage(params));
+                        }
+                        
                     }
                 };
             addMouseMotionListener(mouseInputAdapter);
@@ -414,10 +422,11 @@ class Connection extends Thread {
             // Compute the dimensions of the world
             if (gameState == null) return;  // Nothing to draw yet anyway
 
-            if(gameState != null)return;
+            // if(gameState != null)return;
             Rectangle2D.Double bounds = null;
             //was if(playerID==-1)
-            if (playerID != -2) {
+            if (playerID == -1&& gameState.getPlayers().size()<=playerID) {
+                //default (unzoomed) bounding box
                 bounds = new Rectangle2D.Double(0, 0, gameState.maxX, gameState.maxY);
             } else {
                 // Get some nice bounds around the player's cells

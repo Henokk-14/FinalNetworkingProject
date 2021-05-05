@@ -18,12 +18,13 @@ import java.util.ArrayList;
 import java.awt.Color;
 import java.util.HashSet;
 import java.util.Set;
+
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 
 public class GameServer implements Runnable {
     public static final int DEFAULT_PORT = 1340;
-
+    public static final int GAME_REFRESH_RATE=10; //in ms
     Set<Connection> connection; // Set of client connections
     GameEngine gameEngine;
     Debug debug;
@@ -38,6 +39,7 @@ public class GameServer implements Runnable {
         this.gameEngine = new GameEngine();
         this.debug = Debug.getInstance();
         this.connection = new HashSet<>();
+        //Starts the game engine at construction time
         startServer();
     }
 
@@ -58,18 +60,20 @@ public class GameServer implements Runnable {
         try {
             // Create a server socket bound to the given port
             ServerSocket serverSocket = new ServerSocket(port);
-
+            //creates a thread to push gamestates to all connections
             createPusher();
             while (!done) {
                 // Wait for a client request, establish new thread, and repeat
                 Socket clientSocket = serverSocket.accept();
                 addConnection(clientSocket);
             }
+            serverSocket.close();
         } catch (Exception e) {
             debug.println(0,"[GameServer] ABORTING: An error occurred while creating server socket. " +
                     e.getMessage());
             System.exit(1);
         }
+        
     }
     //creates a new thread with the purpose of pushing the game state every so often
     private void createPusher(){
@@ -77,12 +81,15 @@ public class GameServer implements Runnable {
             public void run(){
                 while(!done){
                     GameState currentState=gameEngine.getGameState();
+                    //currentState.display(System.out);
                     for(Connection c: connection){
-                        c.transmitMessage(currentState);
+                        if(c.playerID!=-1){
+                            c.transmitMessage(currentState);
+                        }
                     }
-                    debug.println(3, "Pushing a message (soon will push game state)");
+                    //debug.println(3, "Pushing a message (soon will push game state)");
                     try{
-                        Thread.sleep(1000);
+                        Thread.sleep(GAME_REFRESH_RATE);
                     }
                     catch(InterruptedException e){
                     }
@@ -131,9 +138,10 @@ public class GameServer implements Runnable {
         Color color;
 
         public Connection(Socket socket, String name){
-            this.socket = socket;
             done = false;
+            this.socket = socket;
             this.name = name;
+            this.playerID=-1;
         }
 
         public void run(){
@@ -175,11 +183,15 @@ public class GameServer implements Runnable {
         }
         //processes a message that has been sent through this connection
         private void processMessage(Object message) {
-            // process the line
-            // create if statements with instance of different types of
-            // messages (similar to in the client)
+            // process the line according to the type of message we receive
             if(message instanceof JoinMessage){
                 processJoinMessage((JoinMessage)message);
+            }
+            else if(message instanceof MovePlayerMessage){
+                processMovePlayerMessage((MovePlayerMessage)message);
+            }
+            else if(message instanceof BoostPlayerMessage){
+                processBoostPlayerMessage((BoostPlayerMessage)message);
             }
             else{
                 printMessage(3, "Unrecognized message: "+message);
@@ -194,6 +206,15 @@ public class GameServer implements Runnable {
              //let the client know that it has been registered in the server
              transmitMessage(new JoinResponseMessage(this.name, this.playerID));
             }
+        private void processMovePlayerMessage(MovePlayerMessage message){
+            if(this.playerID<0){
+                return; //for spectators
+            }
+            gameEngine.setPlayerDirection(this.playerID, message.playerDX, message.playerDY);
+        }
+        private void processBoostPlayerMessage(BoostPlayerMessage message){
+            //set the speed of the player
+        }
 
 
         //print message
@@ -204,6 +225,7 @@ public class GameServer implements Runnable {
             if(out==null)return;
             try {
                 synchronized(out) {
+                   out.reset();
                    out.writeObject(message);
                    out.flush();
                    }
@@ -215,14 +237,4 @@ public class GameServer implements Runnable {
 
        }
     }
-
-
-
-    // process the joinmessage
-/*
-
-*/
-
-    // transmit a message
-
 }

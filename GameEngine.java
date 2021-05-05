@@ -46,8 +46,9 @@ public class GameEngine implements Runnable {
          debug.println(1, "[GameEngine.gGS]: Coding Error!");
          return null;
        }
+       
      }
-
+     //returns the gameState in a byte array form
      public byte[] getGameStateBinary() {
        try {
          ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -55,6 +56,8 @@ public class GameEngine implements Runnable {
          synchronized(gameState) {
            out.writeObject(gameState);
          }
+         out.close();
+         bout.close();
          return bout.toByteArray();
        } catch (IOException e) {
          debug.println(1, "[GameEngine.gGSB]: Coding Error!");
@@ -63,7 +66,11 @@ public class GameEngine implements Runnable {
      }
 
     public synchronized int addPlayer(String name, Color color) {
-        return gameState.addPlayer(name, color);
+        
+      int i = gameState.addPlayer(name, color);
+      System.out.println("adding player now");
+      gameState.display(System.out);
+      return i;
     }
 
     /**

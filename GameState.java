@@ -123,6 +123,10 @@ public class GameState implements Cloneable, Serializable {
              if (distance > head.r) {
                  distance -= head.r;
                  double mag = Math.sqrt(dx*dx + dy*dy);
+                 //if player is just joining
+                 if(mag==0){
+                    return;
+                 }
                  double newX = head.x + head.r * dx / mag;
                  double newY = head.y + head.r * dy / mag;
                  if (growAmount >= 1) {
@@ -187,7 +191,7 @@ public class GameState implements Cloneable, Serializable {
          * For DEBUGGING purposes mainly
          **/
         @Override
-        public String toString() {
+        public synchronized String toString() {
             StringBuilder res = new StringBuilder();
             res.append(name);
             res.append(" cells: ");
@@ -247,7 +251,7 @@ public class GameState implements Cloneable, Serializable {
      * @param color The color of the player
      * @returns The index of this player (in the ArrayList)
      **/
-    public int addPlayer(String name, Color color) {
+    public synchronized int addPlayer(String name, Color color) {
         // Pick an initial random location for the cell
         Point2D.Double p = randomPosition();
         player.add(new Player(name, p.x, p.y, minR, color));
@@ -261,7 +265,7 @@ public class GameState implements Cloneable, Serializable {
      * @param dx The amount to move in the x direction
      * @param dy The amount to move in the y direction
      **/
-    public void setPlayerDirection(int p, double dx, double dy) {
+    public synchronized void setPlayerDirection(int p, double dx, double dy) {
         Player pl = player.get(p);  // Get the Player object
         pl.setDirection(dx, dy);
     }
@@ -271,7 +275,7 @@ public class GameState implements Cloneable, Serializable {
      * @param p The player (index) to move
      * @param s Spped of player
      **/
-    public void setPlayerSpeed(int p, double s) {
+    public synchronized void setPlayerSpeed(int p, double s) {
         Player pl = player.get(p);  // Get the Player object
         pl.setSpeed(s);
     }
@@ -289,7 +293,7 @@ public class GameState implements Cloneable, Serializable {
     /**
      * Add a piece of random snack on the board - anywhere
      **/
-    public void addRandomSnack() {
+    public synchronized void addRandomSnack() {
         Point2D.Double p = randomPosition();
         double size = rand.nextDouble()*0.9+0.1;
         Cell snac = new Cell(p.x, p.y, size);
@@ -312,19 +316,20 @@ public class GameState implements Cloneable, Serializable {
     /**
      * Move all players by the given delta speed
      **/
-    public void moveAllPlayers(double delta) {
+    public synchronized void moveAllPlayers(double delta) {
         for (Player p: player) {
             p.move(delta);
         }
     }
 
     // Get the bounding box of the given player's cells
-    public Rectangle2D.Double getBoundingBox(int p) {
+    public synchronized Rectangle2D.Double getBoundingBox(int p) {
         double cellMinX = maxX;
         double cellMaxX = 0;
         double cellMinY = maxY;
         double cellMaxY = 0;
         Player pl = player.get(p);
+        //System.err.println("gBB: playerID = " +p+ "number of players is "+player.size());
         if (pl.cell.size() == 0) return new Rectangle2D.Double(0, 0, maxX, maxY);  // Full screen
 
         for (Cell c: pl.cell) {
@@ -340,7 +345,7 @@ public class GameState implements Cloneable, Serializable {
     /**
      * Display the "Game State"
      **/
-    public void display(PrintStream out) {
+    public synchronized void display(PrintStream out) {
         out.println("============ State =================");
         for (Player p: player) {
             out.println("  " + p);

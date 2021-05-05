@@ -37,6 +37,7 @@ public class App extends JFrame {
     static final double MIN_HEIGHT = 50;
 
     private GameEngine gameEngine;
+    private GameState gameState;
     private VisPanel visPane;
     private Debug debug = Debug.getInstance();
     JDialog debugWindow = null;
@@ -415,10 +416,7 @@ public class App extends JFrame {
             g2.setPaint(new Color(200, 200, 220));
             g2.fillRect(0, 0, getWidth(), getHeight());
 
-            GameState gameState = gameEngine.getGameState(); // NullPointerException Occuring here and line 42 in GameEngine
-
-            if (gameEngine == null) return;
-
+            //if (gameEngine == null) return;
 
             // Compute the dimensions of the world
             if (gameState == null) return;  // Nothing to draw yet anyway

@@ -59,7 +59,7 @@ public class App extends JFrame {
         // For this we will keep it to a simple BoxLayout
         setLocation(100, 100);
         setPreferredSize(new Dimension(800, 800));
-        setTitle("CSC340 Petrio");
+        setTitle("NetWorm");
         Container mainPane = getContentPane();
         mainPane.setLayout(new BoxLayout(mainPane, BoxLayout.Y_AXIS));
         mainPane.setPreferredSize(new Dimension(1000, 500));
@@ -415,7 +415,7 @@ public class App extends JFrame {
             g2.setPaint(new Color(200, 200, 220));
             g2.fillRect(0, 0, getWidth(), getHeight());
 
-            GameState gameState = gameEngine.getGameState();
+            GameState gameState = gameEngine.getGameState(); // NullPointerException Occuring here and line 42 in GameEngine
 
             if (gameEngine == null) return;
 

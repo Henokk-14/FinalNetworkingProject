@@ -39,11 +39,11 @@ public class GameEngine implements Runnable {
      public GameState getGameState() {
        try {
          byte[] byteCopy = getGameStateBinary();
-         ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(byteCopy));
+         ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(byteCopy)); // NullPointerException Occuring here and line 418 in App
          GameState copy = (GameState) (in.readObject());
          return copy;
        } catch (ClassNotFoundException | IOException e) {
-         debug.println(1, "[GameServer.gGS]: Coding Error!");
+         debug.println(1, "[GameEngine.gGS]: Coding Error!");
          return null;
        }
      }
@@ -57,7 +57,7 @@ public class GameEngine implements Runnable {
          }
          return bout.toByteArray();
        } catch (IOException e) {
-         debug.println(1, "[GameServer.gGSB]: Coding Error!");
+         debug.println(1, "[GameEngine.gGSB]: Coding Error!");
          return null;
        }
      }
@@ -94,7 +94,7 @@ public class GameEngine implements Runnable {
 
          long currentTime = System.currentTimeMillis();
          while (!gameState.isDone()) {
-             debug.println(10, "(GameServer.run) Executing...");
+             debug.println(10, "(GameEngine.run) Executing...");
              // Compute elapsed time since last iteration
              long newTime = System.currentTimeMillis();
              long delta = newTime - currentTime;

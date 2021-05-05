@@ -17,10 +17,14 @@ import java.awt.geom.Rectangle2D;
 import java.awt.geom.Point2D;
 import java.io.Serializable;
 
-public class GameState implements Cloneable {
+
+public class GameState implements Cloneable, Serializable {
+    public static final long serialVersionUID=3402L;
     public static final double MIN_SPEED = 10.0;
+
     // Inner class: A simple cell on the board
-    class Cell implements Cloneable {
+    class Cell implements Cloneable, Serializable {
+        public static final long serialVersionUID=3402L;
         double x;  // x position
         double y;  // y position
         double r;  // radius
@@ -56,7 +60,9 @@ public class GameState implements Cloneable {
     }
 
     // Inner class: Just a player, with name and their list of cells
-    class Player implements Serializable {
+    class Player implements Cloneable, Serializable {
+        public static final long serialVersionUID=3402L;
+
         String name;  // Name to display
         Color appearance;  // The appearance of this player
         Deque<Cell> cell; // The various cells associated with this player

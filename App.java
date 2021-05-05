@@ -163,25 +163,25 @@ public class App extends JFrame {
 
                 }
         };
-        menuAction.putValue(Action.SHORT_DESCRIPTION, "Change server PORT.");
+        menuAction.putValue(Action.SHORT_DESCRIPTION, "Connect to Server.");
         menuItem = new JMenuItem(menuAction);
         menu.add(menuItem);
-        menuAction = new AbstractAction("Join") {
-            public void actionPerformed(ActionEvent event) {
-                establishConnection();
-                // Add yourself to the game and start the game running
-                // First get the name
-                String name = JOptionPane.showInputDialog("Please enter your name.");
-                // And the color
-                Color color = JColorChooser.showDialog(App.this,"Select your color!", Color.BLUE);
-                // "Register" the player (only if the client is connected to a server that is currently running)
-                registerPlayer(color,name);
-                //  playerID = gameServer.addPlayer(name, color);
-            }
-        };
-        menuAction.putValue(Action.SHORT_DESCRIPTION, "Join the game");
-        menuItem = new JMenuItem(menuAction);
-        menu.add(menuItem);
+        // menuAction = new AbstractAction("Join") {
+        //     public void actionPerformed(ActionEvent event) {
+        //         establishConnection();
+        //         // Add yourself to the game and start the game running
+        //         // First get the name
+        //         String name = JOptionPane.showInputDialog("Please enter your name.");
+        //         // And the color
+        //         Color color = JColorChooser.showDialog(App.this,"Select your color!", Color.BLUE);
+        //         // "Register" the player (only if the client is connected to a server that is currently running)
+        //         registerPlayer(color,name);
+        //         //  playerID = gameServer.addPlayer(name, color);
+        //     }
+        // };
+        // menuAction.putValue(Action.SHORT_DESCRIPTION, "Join the game");
+        // menuItem = new JMenuItem(menuAction);
+        // menu.add(menuItem);
         mbar.add(menu);
 
         menu = new JMenu("Monitor");
@@ -215,14 +215,6 @@ public class App extends JFrame {
         setJMenuBar(mbar);
     }
 
-    /**
-     * This just starts a thread going that runs the game.
-     * It should be pulled out into a server class that manages the game!
-     **/
-     public void startServer() {
-         gameEngine = new GameEngine();
-         new Thread(gameEngine).start();
-     }
     public void establishConnection() {
         try {
 
@@ -250,7 +242,7 @@ public class App extends JFrame {
        } else {
            debug.println(3, "No server connection has been established, registerPlayer failed");
        }
-    }    
+    }
 // A connection to handle incomming communcation from the server
 class Connection extends Thread {
     Socket socket;
@@ -277,7 +269,7 @@ class Connection extends Thread {
                     //otherwise, the stream is NOT finished so we can process the message
                     else{
                         processMessage(message);
-                    }    
+                    }
                }
           }
           catch (ClassNotFoundException e) {
@@ -286,14 +278,14 @@ class Connection extends Thread {
           catch (IOException e) {
                 printMessage("IO Error: Error establishing communication with server.");
                 printMessage("          " + e.getMessage());
-            } 
+            }
           try {
             //Close the socket
             printMessage("Client is closing down");
             if (out != null) out.close();
             if (in != null) in.close();
             if (socket != null) socket.close();
-             } 
+             }
           catch (IOException e) {
             printMessage("Error trying to close the socket." +e.getMessage());
         }
@@ -309,7 +301,7 @@ class Connection extends Thread {
                 processGameStateMessage((GameState) message);
             }
             else if(message instanceof JoinMessage){
-                //processJoinMessage method    
+                //processJoinMessage method
             }
             else if(message instanceof MovePlayerMessage){
                 //prcoessMovePlayerMessage method
@@ -348,7 +340,7 @@ class Connection extends Thread {
     private void printMessage( String message) {
         debug.println(3, "[Connection]: "+message);
     }
- 
+
 
     public class VisPanel extends JPanel {
         Graphics2D g2;
@@ -414,11 +406,11 @@ class Connection extends Thread {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setPaint(new Color(200, 200, 220));
             g2.fillRect(0, 0, getWidth(), getHeight());
-          
+
             if (gameEngine != null) {
                 GameState gameState = gameEngine.getGameState();
             }
-            
+
             // Compute the dimensions of the world
             if (gameState == null) return;  // Nothing to draw yet anyway
 

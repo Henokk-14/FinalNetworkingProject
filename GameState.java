@@ -223,6 +223,7 @@ public class GameState implements Cloneable, Serializable {
         minR = 1.0;
         maxCells = 10;
         snacks = new ArrayList<Cell>();
+        rand = new Random();
     }
 
     /**

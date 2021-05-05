@@ -2,7 +2,7 @@
  * GameServer
  * Author: Christian Duncan
  * Spring 21: CSC340
- * 
+ *
  * This is the Server for the Petrio game.
  * It is essentially inspired quite largely by Agar.io
  * And is designed to be a simple game to convert to a Networking game.
@@ -38,7 +38,18 @@ public class GameServer implements Runnable {
         this.gameEngine = new GameEngine();
         this.debug = Debug.getInstance();
         this.connection = new HashSet<>();
+        startServer();
     }
+
+    /**
+     * This just starts a thread going that runs the game.
+     * It should be pulled out into a server class that manages the game!
+     **/
+     public void startServer() {
+         // gameEngine = new GameEngine();
+         new Thread(gameEngine).start();
+     }
+
     /**
      * Run the main communication server... just listen for and create connections
      **/
@@ -74,7 +85,7 @@ public class GameServer implements Runnable {
                         Thread.sleep(1000);
                     }
                     catch(InterruptedException e){
-                    } 
+                    }
                 }
             }
         };
@@ -160,7 +171,7 @@ public class GameServer implements Runnable {
             in=null;
             out=null;
             socket=null;
-        
+
         }
         //processes a message that has been sent through this connection
         private void processMessage(Object message) {
@@ -179,12 +190,12 @@ public class GameServer implements Runnable {
         private void processJoinMessage(JoinMessage message) {
              this.name=message.name;
              this.color=message.color;
-             this.playerID= gameEngine.addPlayer(this.name,this.color); 
-             //let the client know that it has been registered in the server  
+             this.playerID= gameEngine.addPlayer(this.name,this.color);
+             //let the client know that it has been registered in the server
              transmitMessage(new JoinResponseMessage(this.name, this.playerID));
             }
-        
-        
+
+
         //print message
         public void printMessage(int lvl,String m) {
             debug.println(lvl,"["+ name +"]:" + m);
@@ -196,12 +207,12 @@ public class GameServer implements Runnable {
                    out.writeObject(message);
                    out.flush();
                    }
-   
+
             }
             catch (IOException e) {
                 debug.println(3, "Error transmitting message");
             }
-   
+
        }
     }
 
@@ -209,9 +220,9 @@ public class GameServer implements Runnable {
 
     // process the joinmessage
 /*
-    
+
 */
 
     // transmit a message
-     
+
 }

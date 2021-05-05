@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.awt.Color;
 import java.util.HashSet;
 import java.util.Set;
+import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
 
 public class GameServer implements Runnable {
     public static final int DEFAULT_PORT = 1340;
@@ -89,37 +91,45 @@ public class GameServer implements Runnable {
     }
     class Connection extends Thread{
         Socket socket;
-        PrintWriter out;
-        BufferedReader in;
+        ObjectOutputStream out;
+        ObjectInputStream in;
         boolean done;
         String name;
+        int playerID;
+        Color color;
 
         public Connection(Socket socket, String name){
-            this.socket = socket;done = false; this.name = name;
+            this.socket = socket;
+            done = false;
+            this.name = name;
         }
 
         public void run(){
             try {
-                out = new PrintWriter(socket.getOutputStream(), true);
-                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                //first get i/o streams for communication to and from the server
+                out = new ObjectOutputStream(socket.getOutputStream());
+                in = new ObjectInputStream(socket.getInputStream());
 
                 while (!done) {
-                    String line = in.readLine();
-                    if(line == null){
+                    Object message = in.readObject();
+                    if(message == null){
                         printMessage(1,"Line terminated finished");// level 1
                         done = true;
                     } else {
-                        processline(line);
+                        processMessage(message);
                     }
 
                 }
             }catch(IOException e){
-                printMessage(1,"I/O error while communicating with Clinet"); //lvl 1
+                printMessage(1,"I/O error while communicating with Client"); //lvl 1
                 printMessage(1," Message: " + e.getMessage()); //lvl 1
+            }
+            catch (ClassNotFoundException e) {
+                debug.println(1, " Coding Error: Client transmitted unrecognized Object");
             }
 
             try{
-                printMessage(1,"Clinet is closing down");
+                printMessage(1,"Client is closing down");
                 if(in != null) in.close();
                 if(out != null) out.close();
                 if(socket != null) socket.close();
@@ -127,51 +137,55 @@ public class GameServer implements Runnable {
 
             }
         }
-
-        private void processline(String line) {
+        //processes a message that has been sent through this connection
+        private void processMessage(Object message) {
             // process the line
-            printMessage(1,"Proccesing line: "+line);
+            // create if statements with instance of different types of
+            // messages (similar to in the client)
+            if(message instanceof JoinMessage){
+                processJoinMessage((JoinMessage)message);
+            }
+            else{
+                printMessage(3, "Unrecognized message: "+message);
+            }
+            printMessage(1,"Proccesing line: "+message);
         }
-
-        // process a message
-        /*private void processMessage(Object message) {
-            debug.println(3, "[ " + name + " ] message " + message);
-            if (message instanceof JoinMessage) {
-                processJoinMessage((JoinMessage) message);
+        //process a request from the client to join
+        private void processJoinMessage(JoinMessage message) {
+             this.name=message.name;
+             this.color=message.color;
+             this.playerID= gameEngine.addPlayer(this.name,this.color); 
+             //let the client know that it has been registered in the server  
+             transmitMessage(new JoinResponseMessage(this.name, this.playerID));
             }
-            else {
-                debug.println(3, "[ " + name + " ] Unrecognized message: " + message);
-            }
-        }*/
+        
+        
         //print message
         public void printMessage(int lvl,String m) {
             debug.println(lvl,"["+ name +"]:" + m);
         }
+        public void transmitMessage(Object message) {
+            try {
+                   synchronized(out) {
+                 out.writeObject(message);
+                 out.flush();
+                  }
+   
+            }
+            catch (IOException e) {
+                debug.println(3, "Error transmitting message");
+            }
+   
+       }
     }
 
 
 
     // process the joinmessage
-
-/*    private void processJoinMessage(JoinMessage message) {
-    //     this.name = message.name;
-    //    this.color = message.color;
-            transmitMessage( new JoinResponseMessage(this.name, this.playerID));
-    }
-
+/*
+    
+*/
 
     // transmit a message
-     public void transmitMessage(Object message) {
-         try {
-                synchronized(out) {
-              out.writeObject(message);
-              out.flush();
-               }
-
-         }
-         catch (IOException e) {
-             debug.println(3, "Error transmitting message");
-         }
-
-    }*/
+     
 }

@@ -1,6 +1,7 @@
 import java.io.Serializable;
 import java.awt.Color;
-//Server send to the client ID and name
+//Server sends a JoinResponseMessage back to client after client
+//requests a player name and color via a JoinMessage
 public class JoinResponseMessage extends Message implements Serializable {
     String name;
     int playerID;

@@ -41,12 +41,8 @@ public class App extends JFrame {
     JDialog debugWindow = null;
     int playerID = -1;
     private String hostname = "127.0.0.1";
-    // need gamersever default port
     private int port = GameServer.DEFAULT_PORT;
     private Connection connection = null;
-    private Socket socket  = null;
-    private ObjectOutputStream out = null;
-    private ObjectInputStream in = null;
     private String name;
 
     /* Constructor: Sets up the initial look-and-feel */
@@ -81,7 +77,9 @@ public class App extends JFrame {
                 }
             });
         animationTimer.start();
-        startServer();
+        //Commented this out as we are no longer running the game locally from the app class
+        //causes a lot of errors in the app when client connects to server because of this
+        //startServer();
     }
 
     // Basically a scrollable text area that shows contents of the debug output
@@ -219,18 +217,18 @@ public class App extends JFrame {
      * This just starts a thread going that runs the game.
      * It should be pulled out into a server class that manages the game!
      **/
-    public void startServer() {
-        gameEngine = new GameEngine();
-        new Thread(gameEngine).start();
-    }
+    // public void startServer() {
+    //     gameEngine = new GameEngine();
+    //     new Thread(gameEngine).start();
+    // }
     public void establishConnection() {
         try {
 
         // Establish connection with the Inventory Server
-        socket = new Socket(hostname, port);
-        out = new ObjectOutputStream(socket.getOutputStream());
-        in = new ObjectInputStream(socket.getInputStream());
-        connection = new Connection();
+        Socket socket = new Socket(hostname, port);
+        // out = new ObjectOutputStream(socket.getOutputStream());
+        // in = new ObjectInputStream(socket.getInputStream());
+        connection = new Connection(socket);
         connection.start();
 
     } catch (UnknownHostException e) {
@@ -243,86 +241,60 @@ public class App extends JFrame {
      }
     }
 
-    public void registerPlayer(Color color, String name)  {
-       if (out != null ){
+    private void registerPlayer(Color color, String name)  {
+       if (connection.out != null ){
            JoinMessage message = new JoinMessage(name,color);
-           try {
-               synchronized (out) {
-                   out.writeObject(message);
-                   out.flush();
-               }
-           }
-           catch(IOException e) {
-               debug.println(3, " Error");
-           }
+           connection.transmitMessage(message);
        } else {
            debug.println(3, "No server connection has been established, registerPlayer failed");
        }
-
-
-
+    }    
+// A connection to handle incomming communcation from the server
+class Connection extends Thread {
+    Socket socket;
+    ObjectOutputStream out;
+    ObjectInputStream in;
+    boolean done;
+    //Constructor
+    public Connection(Socket socket){
+        this.socket=socket;
+        done=false;
     }
-
-    public void playerJoin(String name, int playerID)  {
-        try {
-            JoinResponseMessage message = new JoinResponseMessage(name, playerID);
-
-            synchronized (out) {
-                out.writeObject(message);
-                out.flush();
-            }
-        } catch(IOException e) {
-                debug.println(3, " Error");
-            }
-    }
-
-
-
-// transmits a Object (message)
-    private void transmitMessage(Object message)  {
-
-        try {
-            synchronized (out) {
-                out.writeObject(message);
-                out.flush();
-            }
-        }
-        catch(IOException e) {
-            debug.println(3, " Error");
-        }
-
-    }
-    // A connection to handle incomming communcation from the server
-    public class Connection extends Thread {
-    boolean done = false;
     public void run( ) {
-        while(!done) {
-            try {
-                Object message = in.readObject();
-                processMessage(message);
-
-            }
-            catch (ClassNotFoundException e) {
+           try {
+               //First make the streams to get and send information to and from the client via this thread
+               out=new ObjectOutputStream(socket.getOutputStream());
+               in=new ObjectInputStream(socket.getInputStream());
+               while(!done){
+                    Object message = in.readObject();
+                    //if the message is null, that mean the stream is done
+                    if(message==null){
+                        debug.println(1, "Line terminated. Ending connection.");
+                        done=true;
+                    }
+                    //otherwise, the stream is NOT finished so we can process the message
+                    else{
+                        processMessage(message);
+                    }    
+               }
+          }
+          catch (ClassNotFoundException e) {
                 debug.println(1, " Coding Error: Server transmitted unrecognized Object");
             }
-            catch (IOException e) {
+          catch (IOException e) {
                 printMessage("IO Error: Error establishing communication with server.");
                 printMessage("          " + e.getMessage());
-
-            }
-
-
-        }
-        try {
+            } 
+          try {
             //Close the socket
             printMessage("Client is closing down");
             if (out != null) out.close();
             if (in != null) in.close();
             if (socket != null) socket.close();
-        } catch (IOException e) {
-            printMessage("Error closing the streams.");
+             } 
+          catch (IOException e) {
+            printMessage("Error trying to close the socket." +e.getMessage());
         }
-
     }
         private void processMessage(Object message) {
             debug.println(3, "[ Connection ] Processing line: "  + message);
@@ -343,20 +315,29 @@ public class App extends JFrame {
             else debug.println(5, "Incoming message not recognized by any message instance");
 
         }
-            private void processJoinResponseMessage(JoinResponseMessage message) {
-            name = message.name;
+        private void processJoinResponseMessage(JoinResponseMessage message) {
+            //name = message.name;
             playerID = message.playerID;
-            debug.println(3, "Player" + name + "is registered with id " + playerID);
-            transmitMessage(new JoinResponseMessage(name,playerID));
+            debug.println(3, "Successfully processed the JoinResonseMessage, player" + name + " is registered with ID: " + playerID);
+        }
+        public void transmitMessage(Object message)  {
+            try {
+                synchronized (out) {
+                    out.writeObject(message);
+                    out.flush();
+                }
+            }
+            catch(IOException e) {
+                debug.println(3, "Error");
+            }
         }
     }
-    // end of class connection
+    // **End of the Connection class**
 
-
-
-    private void printMessage(String message) {
-        debug.println(3,  message);
+    private void printMessage( String message) {
+        debug.println(3, "[Connection]: "+message);
     }
+ 
 
     public class VisPanel extends JPanel {
         Graphics2D g2;

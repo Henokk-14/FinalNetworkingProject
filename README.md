@@ -10,7 +10,7 @@ leaderboard
 # Commitments 
 Bryan Sullivan: worked on adding/accepting connections from the client in the gameserver with Henok,
 Henok Ketsela: worked on adding/accepting connections from the client in the gameserver with Bryan,
-Dylan Irwin:
+Dylan Irwin: worked on the visuals of the game, modified all all Java files,
 Harrison Dominique:
 Jack Zelanicky:
 

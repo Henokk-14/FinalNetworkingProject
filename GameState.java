@@ -129,6 +129,10 @@ public class GameState implements Cloneable, Serializable {
                  }
                  double newX = head.x + head.r * dx / mag;
                  double newY = head.y + head.r * dy / mag;
+                 if(newX<0) newX = 0;
+                 else if(newX>maxX) newX = maxX;
+                 if(newY<0) newY = 0;
+                 else if(newY>maxY) newY = maxY;
                  if (growAmount >= 1) {
                    // Grow a new head
                    this.addCell(newX, newY, head.r);
@@ -180,6 +184,13 @@ public class GameState implements Cloneable, Serializable {
                      this.growAmount+= otherC.r;   // Add cell to the player
                      otherC.r = 0;   // Get rid of snack
                      //System.out.println(this.name + ": yum yum " + this.growAmount);
+                   }
+                   else{
+                       //player whose head collides with other's body shrinks by x factor and respawns
+                       Point2D.Double p = randomPosition();
+                       //TODO: iterate thru old deque to turn them into food
+                       this.cell = new ArrayDeque<>();
+                       this.cell.add(new Cell(p.x, p.y, minR));
                    }
                    return;
                  }

@@ -213,7 +213,12 @@ public class GameServer implements Runnable {
             gameEngine.setPlayerDirection(this.playerID, message.playerDX, message.playerDY);
         }
         private void processBoostPlayerMessage(BoostPlayerMessage message){
-            //set the speed of the player
+            if(this.playerID<0){
+                return; //for spectators
+            }
+            //set the speed of the player, check if the client is sending other speeds
+            if(message.speed<GameState.MIN_SPEED||message.speed>2*GameState.MIN_SPEED) return;
+            gameEngine.setPlayerSpeed(this.playerID, message.speed);
         }
 
 

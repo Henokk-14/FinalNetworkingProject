@@ -25,11 +25,13 @@ public class GameEngine implements Runnable {
     GameState gameState;
     Debug debug;
     boolean done; // is game done
+    double snackDensity;
 
     public GameEngine() {
         this.gameState = new GameState();
         this.debug = Debug.getInstance();
         this.done = false;
+        this.snackDensity = 0.01;
     }
 
      /**
@@ -96,7 +98,7 @@ public class GameEngine implements Runnable {
     // main run method and runs instance of slither
     public void run() {
          // First add a lot of random food cells
-         for (int i = 0; i < 1000; i++)
+         for (int i = 0; i < 100; i++)
              gameState.addRandomSnack();
 
          long currentTime = System.currentTimeMillis();
@@ -113,15 +115,18 @@ public class GameEngine implements Runnable {
              }
 
              // Add some more food.  (Could do this periodically instead but for now ALL the time)
-             synchronized (this) {
-                 gameState.addRandomSnack();
+             if(gameState.getSnacks().size()<gameState.maxX*gameState.maxY*snackDensity){
+                synchronized (this) {
+                gameState.addRandomSnack();
+            }
              }
+             
 
              // Detect all collisions
              detectCollisions();
 
              try {
-                 Thread.sleep(1);
+                 Thread.sleep(16);
              } catch (Exception e) { }
          }
      }
@@ -134,7 +139,7 @@ public class GameEngine implements Runnable {
              for (GameState.Player p: player) p.collisions(snacks, true);
              gameState.purgeSnacks();
 
-             // Now check for collisions with all the players (including themselves)
+             // Now check for collisions with all the players (not themselves)
              int size = player.size();
              for (int i = 0; i < size; i++) {
                  GameState.Player p = player.get(i);
@@ -148,27 +153,4 @@ public class GameEngine implements Runnable {
                  // TODO: REMOVE DEAD PLAYERS
              }
     }
-    // process the joinmessage
-
-   /* private void processJoinMessage(JoinMessage message) {
-        //     this.name = message.name;
-        //    this.color = message.color;
-        transmitMessage( new JoinResponseMessage(this.name, this.playerID));
-    }
-
-
-    // transmit a message
-    public void transmitMessage(Object message) {
-        try {
-            synchronized(out) {
-                out.writeObject(message);
-                out.flush();
-            }
-
-        }
-        catch (IOException e) {
-            debug.println(3, "Error transmitting message");
-        }
-
-    }*/
 }

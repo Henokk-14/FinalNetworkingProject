@@ -147,7 +147,17 @@ public class App extends JFrame {
                 establishConnection();
                 // Add yourself to the game and start the game running
                 // First get the name
-                 name = JOptionPane.showInputDialog("Please enter your name.");
+                boolean flag = true;
+                //  while loop until the user enters a name
+                while( flag == true) {
+                    name = JOptionPane.showInputDialog("Please enter your name.");
+
+                    // if length is not 0 then they entered a name.
+                    if(name.length() != 0) {
+                        flag = false;
+                    }
+                }
+
 
                 // And the color
                 Color color = JColorChooser.showDialog(App.this,
@@ -300,12 +310,6 @@ class Connection extends Thread {
             else if(message instanceof GameState){
                 processGameStateMessage((GameState) message);
             }
-            else if(message instanceof JoinMessage){
-                //processJoinMessage method
-            }
-            else if(message instanceof MovePlayerMessage){
-                //prcoessMovePlayerMessage method
-            }
             else if(message instanceof StringMessage){
                 //processStringMessage method
             }
@@ -366,6 +370,7 @@ class Connection extends Thread {
                          GameState gameState = new GameState();
                          debug.println(3, "App.vP.mIA: Mouse pressed.  Feature Pending!");
                          updateSpeed(2*GameState.MIN_SPEED);
+                         
                      }
 
                      public void mouseReleased(MouseEvent e) {
@@ -392,12 +397,13 @@ class Connection extends Thread {
 
                     private void updateSpeed(double s) {
                         if (playerID == -1) return;  // No player to update
+                        //if offline
                         if(gameEngine!=null){
                             gameEngine.setPlayerSpeed(playerID, s);
                         }
                         else{
                             //transmit a speed update message to server
-                            //connection.transmitMessage(new BoostPlayerMessage(params));
+                            connection.transmitMessage(new BoostPlayerMessage(s));
                         }
                         
                     }
@@ -425,7 +431,7 @@ class Connection extends Thread {
             // if(gameState != null)return;
             Rectangle2D.Double bounds = null;
             //was if(playerID==-1)
-            if (playerID == -1&& gameState.getPlayers().size()<=playerID) {
+            if (playerID == -1 || gameState.getPlayers().size()<=playerID) {
                 //default (unzoomed) bounding box
                 bounds = new Rectangle2D.Double(0, 0, gameState.maxX, gameState.maxY);
             } else {

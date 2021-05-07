@@ -362,5 +362,6 @@ public class GameState implements Cloneable, Serializable {
             out.println("  " + p);
         }
         out.println("====================================");
+
     }
 }

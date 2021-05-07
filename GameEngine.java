@@ -8,16 +8,9 @@
  * And is designed to be a simple game to convert to a Networking game.
  * This just handles game connections and communication.
  ***************/
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.awt.Color;
-import java.util.HashSet;
-import java.util.Set;
 import java.io.*;
 
 public class GameEngine implements Runnable {

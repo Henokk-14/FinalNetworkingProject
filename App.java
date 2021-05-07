@@ -118,6 +118,14 @@ public class App extends JFrame {
         menuItem = new JMenuItem(menuAction);
         menu.add(menuItem);
 
+        menuAction = new AbstractAction("Spectator") {
+            public void actionPerformed(ActionEvent e) {
+                establishConnection();
+                registerPlayer(Color.black,"Spectator");
+            }
+        };
+        menuItem = new JMenuItem(menuAction);
+        menu.add(menuItem);
         // Menu item to change the port to use
         menuAction = new AbstractAction("Change Server PORT") {
             public void actionPerformed(ActionEvent e) {
@@ -325,7 +333,6 @@ class Connection extends Thread {
 
     public class VisPanel extends JPanel {
         Graphics2D g2;
-        double viewportSize = 100.0;
 
         public VisPanel() {
             setPreferredSize(new Dimension(1000,1000) ); // Set size of drawing area, in pixels.

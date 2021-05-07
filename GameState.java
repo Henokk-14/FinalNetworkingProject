@@ -1,11 +1,8 @@
 /***********
  * Game State
  * Author: Christian Duncan
- *
+ * Editors: Dylan Irwin, Jack Zemlanicky
  * This application stores the state of the game.
- *   It includes a list of players
- *   And a list of food.
- *   It is not designed to be efficient - a different task altogether!
  ***********/
 import java.util.ArrayList;
 import java.util.Random;

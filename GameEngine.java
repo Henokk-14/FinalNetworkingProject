@@ -1,12 +1,9 @@
 /***************
  * GameEngine
  * Author: Christian Duncan
+ * Editor: Dylan Irwin
  * Spring 21: CSC340
- *
- * This is the Server for the Petrio game.
- * It is essentially inspired quite largely by Agar.io
- * And is designed to be a simple game to convert to a Networking game.
- * This just handles game connections and communication.
+ * This is the Game Engine for the Networm game
  ***************/
 import java.io.IOException;
 import java.util.ArrayList;

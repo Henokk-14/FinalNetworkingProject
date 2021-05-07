@@ -2,12 +2,8 @@
  * GameServer
  * Author: Christian Duncan
  * Spring 21: CSC340
- * Editors: Henok Ketela, Bryan Sullivan
- *
- * This is the Server for the Petrio game.
- * It is essentially inspired quite largely by Slither.io
- * And is designed to be a simple game to convert to a Networking game.
- * This just handles game connections and communication.
+ * Editors: Henok Ketela, Bryan Sullivan, Jack Zemlanicky
+ * This is the Server for the NetWorm game
  ***************/
 import java.io.IOException;
 import java.net.ServerSocket;

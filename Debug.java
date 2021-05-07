@@ -1,7 +1,7 @@
 /***************
  * Debug
  * Author: Christian Duncan
- *
+ * Editors: None
  * A class use to turn on/off debugging output (with given level)
  ***************/
 import java.io.PrintStream;

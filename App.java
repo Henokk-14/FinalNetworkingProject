@@ -1,6 +1,7 @@
 /***************
  * App
- * Authors: Jack Zemlanicky, Harrison Dominique, Dylan Irwin
+ * Author: Christian Duncan
+ * Editors: Jack Zemlanicky, Dylan Irwin, Harrison Dominique
  * Spring 21: CSC340
  * This is the Main GUI interface to the NetWorm game.
  * It is inspired by Slither.io

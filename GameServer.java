@@ -2,9 +2,10 @@
  * GameServer
  * Author: Christian Duncan
  * Spring 21: CSC340
+ * Editors: Henok Ketela, Bryan Sullivan
  *
  * This is the Server for the Petrio game.
- * It is essentially inspired quite largely by Agar.io
+ * It is essentially inspired quite largely by Slither.io
  * And is designed to be a simple game to convert to a Networking game.
  * This just handles game connections and communication.
  ***************/
@@ -14,10 +15,8 @@ import java.net.Socket;
 import java.awt.Color;
 import java.util.HashSet;
 import java.util.Set;
-
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
-
 public class GameServer implements Runnable {
     public static final int DEFAULT_PORT = 1340;
     public static final int GAME_REFRESH_RATE=10; //in ms
@@ -26,7 +25,6 @@ public class GameServer implements Runnable {
     Debug debug;
     int port;
     boolean done;
-
     //when no parameter given the default port will be passed to the constructor
     public GameServer() {
         this(DEFAULT_PORT);
@@ -40,7 +38,6 @@ public class GameServer implements Runnable {
         //Starts the game engine at construction time
         startServer();
     }
-
     /**
      * This just starts a thread going that runs the game.
      * It should be pulled out into a server class that manages the game!
@@ -79,9 +76,10 @@ public class GameServer implements Runnable {
             public void run(){
                 while(!done){
                     GameState currentState=gameEngine.getGameState();
-                    for(Connection c: connection) {
+                    for(Connection c: connection){
                         c.transmitMessage(currentState);
                     }
+                    //debug.println(3, "Pushing a message (soon will push game state)");
                     try{
                         Thread.sleep(GAME_REFRESH_RATE);
                     }
@@ -90,8 +88,7 @@ public class GameServer implements Runnable {
                 }
             }
         };
-        //Start thread
-        t.start();
+        t.start();//start the thread
     }
     //creates a new thread with the client connection
     public void addConnection(Socket clientSocket){
@@ -107,7 +104,6 @@ public class GameServer implements Runnable {
      **/
     public static void main(String[] args) {
         int port = DEFAULT_PORT;
-
         // Set the port if specified
         if (args.length > 0) {
             try {
@@ -119,12 +115,10 @@ public class GameServer implements Runnable {
                 System.exit(1);
             }
         }
-
         // Create and start the server
         GameServer s = new GameServer(port);
         s.run();
     }
-
     /**
      * This class deals with all of the incoming connections, initialize players,
      * create the input streams and output streams, and will processes the messages
@@ -138,14 +132,12 @@ public class GameServer implements Runnable {
         String name;
         int playerID;
         Color color;
-
         public Connection(Socket socket, String name){
             done = false;
             this.socket = socket;
             this.name = name;
             this.playerID=-1;
         }
-
         public void run(){
             try {
                 //first get i/o streams for communication to and from the server
@@ -160,7 +152,6 @@ public class GameServer implements Runnable {
                     } else {
                         processMessage(message);
                     }
-
                 }
             }catch(IOException e){
                 printMessage(1,"I/O error while communicating with Client"); //lvl 1
@@ -171,18 +162,16 @@ public class GameServer implements Runnable {
             }
 
             try{
-                //closses client
+                //closses client and its connections
                 printMessage(1,"Client is closing down");
                 if(in != null) in.close();
                 if(out != null) out.close();
                 if(socket != null) socket.close();
             } catch (IOException e) {
-
             }
             in=null;
             out=null;
             socket=null;
-
         }
         //processes a message that has been sent through this connection
         private void processMessage(Object message) {
@@ -199,7 +188,6 @@ public class GameServer implements Runnable {
             else{
                 printMessage(3, "Unrecognized message: "+message);
             }
-            printMessage(1,"Proccesing line: "+message);
         }
         //process a request from the client to join
         private void processJoinMessage(JoinMessage message) {
@@ -223,13 +211,10 @@ public class GameServer implements Runnable {
             if(message.speed<GameState.MIN_SPEED||message.speed>2*GameState.MIN_SPEED) return;
             gameEngine.setPlayerSpeed(this.playerID, message.speed);
         }
-
-
         //print message
         public void printMessage(int lvl,String m) {
             debug.println(lvl,"["+ name +"]:" + m);
         }
-        //transmit message of type object to the client
         public void transmitMessage(Object message) {
             if(out==null)return;
             try {

@@ -1,3 +1,11 @@
+/***************
+ * JoinResponseMessage
+ * Editors: Jack Zemlanicky, Harrison Dominique, Dylan Irwin, Henok Ketela, Bryan Sullivan
+ * Spring 21: CSC340
+ * This is the Join Response message
+ *Used to transmit a Join Response message.
+ ***************/
+
 import java.io.Serializable;
 import java.awt.Color;
 //Server sends a JoinResponseMessage back to client after client

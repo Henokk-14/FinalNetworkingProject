@@ -1,3 +1,11 @@
+/***************
+ * MovePlayerMessage
+ * Editors: Jack Zemlanicky, Harrison Dominique, Dylan Irwin, Henok Ketela, Bryan Sullivan
+ * Spring 21: CSC340
+ * This is the Move Player message
+ *Used to transmit a Move player message.
+ ***************/
+
 import java.awt.Color;
 import java.io.Serializable;
 

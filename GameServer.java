@@ -27,9 +27,11 @@ public class GameServer implements Runnable {
     int port;
     boolean done;
 
+    //when no parameter given the default port will be passed to the constructor
     public GameServer() {
         this(DEFAULT_PORT);
     }
+    //constructor that inisializes port, gameEngine, Debug, Connection and starts game engine thread
     public GameServer(int port) {
         this.port = port;
         this.gameEngine = new GameEngine();
@@ -77,13 +79,9 @@ public class GameServer implements Runnable {
             public void run(){
                 while(!done){
                     GameState currentState=gameEngine.getGameState();
-                    //currentState.display(System.out);
-                    for(Connection c: connection){
-                        if(c.playerID!=-1){
-                            c.transmitMessage(currentState);
-                        } else c.transmitMessage(currentState);
+                    for(Connection c: connection) {
+                        c.transmitMessage(currentState);
                     }
-                    //debug.println(3, "Pushing a message (soon will push game state)");
                     try{
                         Thread.sleep(GAME_REFRESH_RATE);
                     }
@@ -92,12 +90,13 @@ public class GameServer implements Runnable {
                 }
             }
         };
+        //Start thread
         t.start();
     }
     //creates a new thread with the client connection
     public void addConnection(Socket clientSocket){
         String name = clientSocket.getInetAddress().toString();
-        System.out.println("Inventory Server: Connecting to client: "+ name );
+        System.out.println("Game Server: Connecting to client: "+ name );
         Connection c = new Connection(clientSocket,name);
         connection.add(c);
         c.start(); //start thread
@@ -114,6 +113,7 @@ public class GameServer implements Runnable {
             try {
                 port = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
+                //throws an error if the port is not an integer
                 System.err.println("Usage: java GameServer [PORT]");
                 System.err.println("       PORT must be an integer.");
                 System.exit(1);
@@ -124,6 +124,12 @@ public class GameServer implements Runnable {
         GameServer s = new GameServer(port);
         s.run();
     }
+
+    /**
+     * This class deals with all of the incoming connections, initialize players,
+     * create the input streams and output streams, and will processes the messages
+     * the client sends to the server.
+     */
     class Connection extends Thread{
         Socket socket;
         ObjectOutputStream out;
@@ -145,7 +151,7 @@ public class GameServer implements Runnable {
                 //first get i/o streams for communication to and from the server
                 out = new ObjectOutputStream(socket.getOutputStream());
                 in = new ObjectInputStream(socket.getInputStream());
-
+                //loops reading in messages until connection is stopped
                 while (!done) {
                     Object message = in.readObject();
                     if(message == null){
@@ -165,6 +171,7 @@ public class GameServer implements Runnable {
             }
 
             try{
+                //closses client
                 printMessage(1,"Client is closing down");
                 if(in != null) in.close();
                 if(out != null) out.close();
@@ -222,6 +229,7 @@ public class GameServer implements Runnable {
         public void printMessage(int lvl,String m) {
             debug.println(lvl,"["+ name +"]:" + m);
         }
+        //transmit message of type object to the client
         public void transmitMessage(Object message) {
             if(out==null)return;
             try {

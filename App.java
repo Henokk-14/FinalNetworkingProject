@@ -164,34 +164,14 @@ public class App extends JFrame {
                         "Select your color!",
                         Color.BLUE);
 
+                // "Register" the player
                 // passes color and name to the server
                 registerPlayer(color,name);
-
-                // "Register" the player
-                // playerID = gameServer.addPlayer(name, color);
-
-
-                }
+            }
         };
         menuAction.putValue(Action.SHORT_DESCRIPTION, "Connect to Server.");
         menuItem = new JMenuItem(menuAction);
         menu.add(menuItem);
-        // menuAction = new AbstractAction("Join") {
-        //     public void actionPerformed(ActionEvent event) {
-        //         establishConnection();
-        //         // Add yourself to the game and start the game running
-        //         // First get the name
-        //         String name = JOptionPane.showInputDialog("Please enter your name.");
-        //         // And the color
-        //         Color color = JColorChooser.showDialog(App.this,"Select your color!", Color.BLUE);
-        //         // "Register" the player (only if the client is connected to a server that is currently running)
-        //         registerPlayer(color,name);
-        //         //  playerID = gameServer.addPlayer(name, color);
-        //     }
-        // };
-        // menuAction.putValue(Action.SHORT_DESCRIPTION, "Join the game");
-        // menuItem = new JMenuItem(menuAction);
-        // menu.add(menuItem);
         mbar.add(menu);
 
         menu = new JMenu("Monitor");
@@ -230,19 +210,16 @@ public class App extends JFrame {
 
         // Establish connection with the Inventory Server
         Socket socket = new Socket(hostname, port);
-        // out = new ObjectOutputStream(socket.getOutputStream());
-        // in = new ObjectInputStream(socket.getInputStream());
         connection = new Connection(socket);
         connection.start();
 
-    } catch (UnknownHostException e) {
-            printMessage("Unknown host: " + hostname);
-            printMessage("             " + e.getMessage());
+        } catch (UnknownHostException e) {
+                printMessage("Unknown host: " + hostname);
+                printMessage("             " + e.getMessage());
+        } catch (IOException e) {
+                printMessage("IO Error: Error establishing communication with server.");
+                printMessage("          " + e.getMessage());
         }
-     catch (IOException e) {
-        printMessage("IO Error: Error establishing communication with server.");
-        printMessage("          " + e.getMessage());
-     }
     }
 
     private void registerPlayer(Color color, String name)  {
@@ -370,7 +347,7 @@ class Connection extends Thread {
                          GameState gameState = new GameState();
                          debug.println(3, "App.vP.mIA: Mouse pressed.  Feature Pending!");
                          updateSpeed(2*GameState.MIN_SPEED);
-                         
+
                      }
 
                      public void mouseReleased(MouseEvent e) {
@@ -405,7 +382,7 @@ class Connection extends Thread {
                             //transmit a speed update message to server
                             connection.transmitMessage(new BoostPlayerMessage(s));
                         }
-                        
+
                     }
                 };
             addMouseMotionListener(mouseInputAdapter);
@@ -501,6 +478,8 @@ class Connection extends Thread {
                 // Create the cell font
                 cellFont = new Font("Serif", Font.BOLD, 18);
             }
+            g2.setColor(Color.BLACK);
+            g2.drawRect(-1, -1, (int)gameState.maxX+2, (int)gameState.maxY+2);
 
             // Not sure if it changes as screen size changes for example. So getting it each redisplay
             cellFontMetrics = g2.getFontMetrics(cellFont);

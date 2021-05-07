@@ -233,8 +233,8 @@ public class GameState implements Cloneable, Serializable {
 
     public GameState() {
         player = new ArrayList<Player>(2);  // Initial size
-        maxX = 1000.0;
-        maxY = 1000.0;
+        maxX = 500.0;
+        maxY = 500.0;
         minR = 1.0;
         maxCells = 10;
         snacks = new ArrayList<Cell>();

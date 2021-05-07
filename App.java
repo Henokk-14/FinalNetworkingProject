@@ -1,11 +1,10 @@
 /***************
  * App
- * Author: Christian Duncan
+ * Authors: Jack Zemlanicky, Harrison Dominique, Dylan Irwin
  * Spring 21: CSC340
- *
- * This is the Main GUI interface to the Petrio game.
- * It is essentially inspired quite largely by Agar.io
- * And is designed to be a simple game to convert to a Networking game.
+ * This is the Main GUI interface to the NetWorm game.
+ * It is inspired by Slither.io
+ * And is designed to be a simple Network game.
  ***************/
 import java.awt.*;        // import statements to make necessary classes available
 import java.awt.geom.*;
@@ -49,9 +48,7 @@ public class App extends JFrame {
 
     /* Constructor: Sets up the initial look-and-feel */
     public App() {
-        JLabel label;  // Temporary variable for a label
-        JButton button; // Temporary variable for a button
-
+        
         // Set up the initial size and layout of the frame
         // For this we will keep it to a simple BoxLayout
         setLocation(100, 100);
@@ -79,9 +76,6 @@ public class App extends JFrame {
                 }
             });
         animationTimer.start();
-        //Commented this out as we are no longer running the game locally from the app class
-        //causes a lot of errors in the app when client connects to server because of this
-        //startServer();
     }
 
     // Basically a scrollable text area that shows contents of the debug output
@@ -152,22 +146,20 @@ public class App extends JFrame {
         menuAction = new AbstractAction("Join Server") {
             public void actionPerformed(ActionEvent e) {
 
-                establishConnection();
-                // Add yourself to the game and start the game running
-                // First get the name
+                establishConnection(); // Connect the client to the server (or attempt to do so)
                 boolean flag = true;
                 //  while loop until the user enters a name
                 while( flag == true) {
                     name = JOptionPane.showInputDialog("Please enter your name.");
 
-                    // if length is not 0 then they entered a name.
-                    if(name.length() != 0) {
+                    // if length is not 0 and does not contain spaces, then they entered a valid name
+                    if(name.length() != 0 &! name.contains(" ")) {
                         flag = false;
                     }
                 }
 
 
-                // And the color
+                // Get the user to choose a color, is blue by default (if they choose nothing)
                 Color color = JColorChooser.showDialog(App.this,
                         "Select your color!",
                         Color.BLUE);
@@ -216,7 +208,7 @@ public class App extends JFrame {
     public void establishConnection() {
         try {
 
-        // Establish connection with the Inventory Server
+        // Establish connection with the Game Server
         Socket socket = new Socket(hostname, port);
         connection = new Connection(socket);
         connection.start();
@@ -238,7 +230,7 @@ public class App extends JFrame {
            debug.println(3, "No server connection has been established, registerPlayer failed");
        }
     }
-// A connection to handle incomming communcation from the server
+// A connection to handle incomming communication from the server (as its own thread)
 class Connection extends Thread {
     Socket socket;
     ObjectOutputStream out;
@@ -256,7 +248,7 @@ class Connection extends Thread {
                in=new ObjectInputStream(socket.getInputStream());
                while(!done){
                     Object message = in.readObject();
-                    //if the message is null, that mean the stream is done
+                    //if the message is null, that means the stream is done
                     if(message==null){
                         debug.println(1, "Line terminated. Ending connection.");
                         done=true;
@@ -268,7 +260,7 @@ class Connection extends Thread {
                }
           }
           catch (ClassNotFoundException e) {
-                debug.println(1, " Coding Error: Server transmitted unrecognized Object");
+                debug.println(1, "Coding Error: Server transmitted unrecognized Object");
             }
           catch (IOException e) {
                 printMessage("IO Error: Error establishing communication with server.");
@@ -288,18 +280,14 @@ class Connection extends Thread {
         private void processMessage(Object message) {
             debug.println(3, "[ Connection ] Processing line: "  + message);
             // protocol for the server passing the playerID to client
-            //see if the received message is an instance of one of our several message types
+            //see if the received message is a GameState or JoinResponseMessage
             if(message instanceof JoinResponseMessage) {
                 processJoinResponseMessage((JoinResponseMessage) message);
             }
             else if(message instanceof GameState){
                 processGameStateMessage((GameState) message);
             }
-            else if(message instanceof StringMessage){
-                //processStringMessage method
-            }
             else debug.println(5, "Incoming message not recognized by any message instance");
-
         }
         //process an incoming game state
         private void processGameStateMessage(GameState state){
@@ -307,8 +295,8 @@ class Connection extends Thread {
             debug.println(3, "Successfully processed a gameStateMessage.");
             state.display(debug.getStream());
         }
+        //process an incoming response to this client's initial join message
         private void processJoinResponseMessage(JoinResponseMessage message) {
-            //name = message.name;
             playerID = message.playerID;
             debug.println(3, "Successfully processed a JoinResponseMessage, player " + name + " is registered with ID: " + playerID);
         }
@@ -339,20 +327,18 @@ class Connection extends Thread {
             MouseInputAdapter mouseInputAdapter = new MouseInputAdapter() {
                     public void mouseDragged(MouseEvent e) {
                         Point p = e.getPoint();  // Get point relative to this component
-                        //debug.println(5, "App.VP: Mouse dragged to position " + p);
                         updateDirection(p);
                     }
 
                     public void mouseMoved(MouseEvent e) {
                         Point p = e.getPoint();  // Get point relative to this component
-                        //debug.println(5, "App.VP: Mouse moved to position " + p);
                         updateDirection(p);
                     }
 
                     public void mousePressed(MouseEvent e) {
                          // If this mouse is pressed (held), then speed up
                          GameState gameState = new GameState();
-                         debug.println(3, "App.vP.mIA: Mouse pressed.  Feature Pending!");
+                         debug.println(3, "App.vP.mIA: Mouse pressed.  Speeding up player "+playerID);
                          updateSpeed(2*GameState.MIN_SPEED);
 
                      }
@@ -360,7 +346,7 @@ class Connection extends Thread {
                      public void mouseReleased(MouseEvent e) {
                          // If this mouse is released, go to normal speed
                          GameState gameState = new GameState();
-                         debug.println(3, "App.vP.mIA: Mouse released.  Feature Pending!");
+                         debug.println(3, "App.vP.mIA: Mouse released." +playerID+ " is returning to normal");
                          updateSpeed(GameState.MIN_SPEED);
                      }
 
@@ -371,6 +357,7 @@ class Connection extends Thread {
                         double playerDX = p.x - centerX;
                         double playerDY = centerY - p.y;
                         if(gameEngine != null){
+                            //if playing offline/locally
                             gameEngine.setPlayerDirection(playerID, playerDX, playerDY);
                         }
                         else{
@@ -408,15 +395,12 @@ class Connection extends Thread {
             if (gameEngine != null) {
                 GameState gameState = gameEngine.getGameState();
             }
-
             // Compute the dimensions of the world
             if (gameState == null) return;  // Nothing to draw yet anyway
 
-            // if(gameState != null)return;
             Rectangle2D.Double bounds = null;
-            //was if(playerID==-1)
             if (playerID == -1 || gameState.getPlayers().size()<=playerID) {
-                //default (unzoomed) bounding box
+                //default (unzoomed) bounding box, similar to the spectator
                 bounds = new Rectangle2D.Double(0, 0, gameState.maxX, gameState.maxY);
             } else {
                 // Get some nice bounds around the player's cells
@@ -438,10 +422,8 @@ class Connection extends Thread {
                 bounds.y -= bufferY;
                 bounds.width += bufferX*2;
                 bounds.height += bufferY*2;
-                // To Do: Should keep it within the 0,0 to maxX, maxY range as well!
             }
             setupViewport(bounds.x, bounds.x + bounds.width, bounds.y, bounds.y + bounds.height);
-
             drawGameState(gameState);
         }
 
@@ -488,14 +470,12 @@ class Connection extends Thread {
             g2.setColor(Color.BLACK);
             g2.drawRect(-1, -1, (int)gameState.maxX+2, (int)gameState.maxY+2);
 
-            // Not sure if it changes as screen size changes for example. So getting it each redisplay
             cellFontMetrics = g2.getFontMetrics(cellFont);
 
             // Draw the snacks first
             drawSnacks(gameState);
 
             // Iterate through all of the players and all of the cells in the game
-            // Again, not done super efficiently - could crop ones that are not visible!
             ArrayList<GameState.Player> player = gameState.getPlayers();
             for (GameState.Player p: player) {
                 drawPlayer(p);
@@ -522,7 +502,6 @@ class Connection extends Thread {
              }
          }
 
-        // Could make it configurable but why...
         private Font cellFont = null;
         private FontMetrics cellFontMetrics = null;
 

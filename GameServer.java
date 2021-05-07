@@ -192,7 +192,6 @@ public class GameServer implements Runnable {
             else{
                 printMessage(3, "Unrecognized message: "+message);
             }
-            printMessage(1,"Proccesing line: "+message);
         }
         //process a request from the client to join
         private void processJoinMessage(JoinMessage message) {
